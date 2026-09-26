@@ -1,13 +1,8 @@
 {
-  "functions": {
-    "ai_service/main.py": {
-      "runtime": "python3.10"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/ai/(.*)",
-      "destination": "/ai_service/main.py"
+      "destination": "/api/index.py"
     },
     {
       "source": "/(.*)",
