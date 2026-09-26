@@ -1,14 +1,17 @@
 {
-  "builds": [
-    {
-      "src": "ai_service/main.py",
-      "use": "@vercel/python"
+  "functions": {
+    "ai_service/main.py": {
+      "runtime": "python3.10"
     }
-  ],
-  "routes": [
+  },
+  "rewrites": [
     {
-      "src": "/ai/(.*)",
-      "dest": "ai_service/main.py"
+      "source": "/api/ai/(.*)",
+      "destination": "/ai_service/main.py"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
