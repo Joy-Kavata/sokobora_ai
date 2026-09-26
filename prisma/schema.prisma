@@ -1,5 +1,5 @@
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -36,28 +36,28 @@ enum BidStatus {
 }
 
 model User {
-  id            String          @id @default(uuid())
+  id            String           @id @default(uuid())
   fullName      String
-  email         String          @unique
-  phone         String          @unique
+  email         String           @unique
+  phone         String           @unique
   passwordHash  String
-  role          Role            @default(FARMER)
+  role          Role             @default(FARMER)
   businessName  String?
   county        String
   subCounty     String?
   latitude      Float?
   longitude     Float?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   listings      ProduceListing[] @relation("FarmerListings")
   bids          Bid[]            @relation("BuyerBids")
 }
 
 model ProduceListing {
-  id                 String        @id @default(uuid())
+  id                 String           @id @default(uuid())
   farmerId           String
-  farmer             User          @relation("FarmerListings", fields: [farmerId], references: [id], onDelete: Cascade)
+  farmer             User             @relation("FarmerListings", fields: [farmerId], references: [id], onDelete: Cascade)
   
   cropType           String
   quantityKg         Float
@@ -69,12 +69,12 @@ model ProduceListing {
   latitude           Float
   longitude          Float
   
-  status             ListingStatus @default(ACTIVE)
+  status             ListingStatus    @default(ACTIVE)
   startingPricePerKg Float
   currentHighestBid  Float?
   
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
   aiLog              AIPredictionLog?
   bids               Bid[]
@@ -82,45 +82,45 @@ model ProduceListing {
 }
 
 model AIPredictionLog {
-  id                  String       @id @default(uuid())
-  listingId           String       @unique
+  id                  String         @id @default(uuid())
+  listingId           String         @unique
   listing             ProduceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
   
   spoilageRisk        SpoilageRisk
   estimatedShelfHours Float
   recommendedMinPrice Float
   recommendedMaxPrice Float
-  flashAuctionTrigger Boolean      @default(false)
-  confidenceScore    Float        @default(0.92)
+  flashAuctionTrigger Boolean        @default(false)
+  confidenceScore     Float          @default(0.92)
   
-  createdAt           DateTime     @default(now())
+  createdAt           DateTime       @default(now())
 }
 
 model Bid {
-  id          String         @id @default(uuid())
-  listingId   String
-  listing     ProduceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  buyerId     String
-  buyer       User           @relation("BuyerBids", fields: [buyerId], references: [id], onDelete: Cascade)
+  id             String         @id @default(uuid())
+  listingId      String
+  listing        ProduceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerId        String
+  buyer          User           @relation("BuyerBids", fields: [buyerId], references: [id], onDelete: Cascade)
   
   bidAmountPerKg Float
   totalValue     Float
-  status         BidStatus     @default(PENDING)
+  status         BidStatus      @default(PENDING)
   
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 }
 
 model Transaction {
-  id             String         @id @default(uuid())
-  listingId      String         @unique
-  listing        ProduceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  id              String         @id @default(uuid())
+  listingId       String         @unique
+  listing         ProduceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
   
   finalPricePerKg Float
-  totalAmount    Float
-  kgSaved        Float
-  co2AvoidedKg   Float
-  pickupCode     String         @unique
+  totalAmount     Float
+  kgSaved         Float
+  co2AvoidedKg    Float
+  pickupCode      String         @unique
   
-  createdAt      DateTime       @default(now())
+  createdAt       DateTime       @default(now())
 }
