@@ -1,22 +1,19 @@
 const express = require('express');
 const cors = require('cors');
-const axios = require('axios');
 const { PrismaClient } = require('@prisma/client');
 
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 5000;
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 
 app.use(cors());
 app.use(express.json());
 
-// 1. GET ALL LISTINGS (With AI Logs)
+// 1. GET ALL ACTIVE STOCK LISTINGS
 app.get('/api/listings', async (req, res) => {
   try {
     const listings = await prisma.produceListing.findMany({
       include: {
-        aiLog: true,
         bids: {
           orderBy: { bidAmountPerKg: 'desc' },
           take: 1
@@ -33,63 +30,33 @@ app.get('/api/listings', async (req, res) => {
 // 2. POST NEW FARMER LISTING (Calls FastAPI ML Engine + Saves to DB)
 app.post('/api/listings', async (req, res) => {
   try {
-    const { farmerId, cropType, quantityKg, storageType, ambientTemp, county, subCounty, latitude, longitude } = req.body;
-
-    // Call Python FastAPI Model
-    let aiResponse;
-    try {
-      const mlResult = await axios.post(`${AI_SERVICE_URL}/predict`, {
-        cropType,
-        storageType,
-        ambientTemp: parseFloat(ambientTemp)
-      });
-      aiResponse = mlResult.data;
-    } catch (err) {
-      // Fallback prediction heuristic if ML service is offline
-      const temp = parseFloat(ambientTemp);
-      const isHighRisk = temp > 25 || storageType === 'Direct Sun';
-      aiResponse = {
-        spoilageRisk: isHighRisk ? 'HIGH' : 'LOW',
-        estimatedShelfHours: isHighRisk ? 36.0 : 120.0,
-        recommendedMinPrice: 35.0,
-        recommendedMaxPrice: 42.0,
-        flashAuctionTrigger: isHighRisk
-      };
+    const { farmerId, cropType, quantityKg, county, subCounty, latitude, longitude, startingPricePerKg } = req.body;
+    const volume = Number(quantityKg);
+    const askingPrice = Number(startingPricePerKg);
+    if (!cropType || !county || !Number.isFinite(volume) || volume <= 0 || !Number.isFinite(askingPrice) || askingPrice <= 0) {
+      return res.status(400).json({ success: false, message: 'Product, region, positive volume, and asking price are required.' });
     }
-
-    const isFlash = aiResponse.flashAuctionTrigger;
 
     const newListing = await prisma.produceListing.create({
       data: {
         farmerId: farmerId || 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
         cropType,
-        quantityKg: parseFloat(quantityKg),
+        quantityKg: volume,
         harvestDate: new Date(),
-        storageType,
-        ambientTemp: parseFloat(ambientTemp),
+        storageType: 'Not tracked',
+        ambientTemp: 0,
         county,
         subCounty: subCounty || '',
         latitude: parseFloat(latitude || -1.286),
         longitude: parseFloat(longitude || 36.821),
-        status: isFlash ? 'FLASH_AUCTION' : 'ACTIVE',
-        startingPricePerKg: aiResponse.recommendedMinPrice,
-        aiLog: {
-          create: {
-            spoilageRisk: aiResponse.spoilageRisk,
-            estimatedShelfHours: aiResponse.estimatedShelfHours,
-            recommendedMinPrice: aiResponse.recommendedMinPrice,
-            recommendedMaxPrice: aiResponse.recommendedMaxPrice,
-            flashAuctionTrigger: isFlash,
-            confidenceScore: 0.94
-          }
-        }
-      },
-      include: { aiLog: true }
+        status: 'ACTIVE',
+        startingPricePerKg: askingPrice
+      }
     });
 
     res.status(201).json({
       success: true,
-      message: isFlash ? 'High spoilage risk detected! Auto-listed as Flash Auction.' : 'Listing published successfully.',
+      message: 'Commercial stock listing published successfully.',
       data: newListing
     });
   } catch (error) {
@@ -149,28 +116,18 @@ app.get('/api/analytics/impact', async (req, res) => {
       include: { transaction: true }
     });
 
-    let totalKgSaved = 0;
-    let totalFarmerRevenueKes = 0;
-
-    listings.forEach((item) => {
-      if (item.currentHighestBid) {
-        totalKgSaved += item.quantityKg;
-        totalFarmerRevenueKes += item.quantityKg * item.currentHighestBid;
-      }
-    });
-
-    const activeFlash = await prisma.produceListing.count({
-      where: { status: 'FLASH_AUCTION' }
-    });
+    const activeListings = listings.filter((item) => item.status === 'ACTIVE');
+    const listedVolumeKg = activeListings.reduce((total, item) => total + item.quantityKg, 0);
+    const grossTradeValueKes = activeListings.reduce((total, item) => total + (item.quantityKg * item.startingPricePerKg), 0);
+    const regionsRepresented = new Set(activeListings.map((item) => item.county)).size;
 
     res.json({
       success: true,
       data: {
-        totalKgSaved,
-        totalCo2AvoidedKg: Math.round(totalKgSaved * 1.4), // 1.4 kg CO2 saved per kg produce preserved
-        totalFarmerRevenueKes,
-        activeFlashAuctions: activeFlash,
-        successfulTransactions: listings.length
+        listedVolumeKg,
+        grossTradeValueKes,
+        activeListings: activeListings.length,
+        regionsRepresented
       }
     });
   } catch (error) {

@@ -62,8 +62,8 @@ const BuyerAuctionFeed = () => {
     <div className="max-w-5xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">SokoBora AI - Buyer Marketplace</h2>
-          <p className="text-sm text-gray-600">Pre-arranged fresh produce auctions sorted by spoilage urgency.</p>
+          <h2 className="text-2xl font-bold text-gray-800">Regional Stock Exchange</h2>
+          <p className="text-sm text-gray-600">Available commercial volumes for buyers, wholesalers, and distributors.</p>
         </div>
         <button 
           onClick={fetchListings}
@@ -80,39 +80,26 @@ const BuyerAuctionFeed = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {listings.map((listing) => {
-            const isFlash = listing.status === 'FLASH_AUCTION';
-            const risk = listing.aiLog?.spoilageRisk || 'LOW';
-
             return (
               <div 
                 key={listing.id} 
-                className={`border rounded-xl p-4 bg-white shadow-sm flex flex-col justify-between ${
-                  isFlash ? 'border-red-300 ring-1 ring-red-200' : 'border-gray-200'
-                }`}
+                className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm flex flex-col justify-between"
               >
                 <div>
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="text-lg font-bold text-gray-800">{listing.cropType}</h3>
-                    <span className={`px-2 py-0.5 text-xs font-bold rounded ${
-                      risk === 'HIGH' || risk === 'CRITICAL'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-green-100 text-green-800'
-                    }`}>
-                      {risk} RISK
+                    <span className="px-2 py-0.5 text-xs font-bold rounded bg-green-100 text-green-800">
+                      {listing.status === 'LOCKED' ? 'ORDERED' : 'AVAILABLE'}
                     </span>
                   </div>
 
-                  <p className="text-xs text-gray-500 mb-1">Location: {listing.county}, {listing.subCounty}</p>
-                  <p className="text-xs text-gray-500 mb-3">Volume Available: <span className="font-semibold text-gray-700">{listing.quantityKg} kg</span></p>
+                  <p className="text-xs text-gray-500 mb-1">Trading area: {listing.subCounty}, {listing.county}</p>
+                  <p className="text-xs text-gray-500 mb-3">Available volume: <span className="font-semibold text-gray-700">{listing.quantityKg.toLocaleString()} kg</span></p>
 
                   <div className="bg-gray-50 p-2.5 rounded border border-gray-100 mb-4 text-xs space-y-1">
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Est. Remaining Shelf-life:</span>
-                      <span className="font-semibold">{listing.aiLog?.estimatedShelfHours || '--'} hrs</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Fair Price Estimate:</span>
-                      <span className="font-semibold">KES {listing.aiLog?.recommendedMinPrice} - {listing.aiLog?.recommendedMaxPrice}</span>
+                      <span className="text-gray-500">Asking price:</span>
+                      <span className="font-semibold">KES {listing.startingPricePerKg}/kg</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Current Highest Bid:</span>
@@ -129,8 +116,6 @@ const BuyerAuctionFeed = () => {
                   className={`w-full py-2 text-xs font-bold rounded transition ${
                     listing.status === 'LOCKED'
                       ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                      : isFlash
-                      ? 'bg-red-600 hover:bg-red-700 text-white'
                       : 'bg-green-600 hover:bg-green-700 text-white'
                   }`}
                 >

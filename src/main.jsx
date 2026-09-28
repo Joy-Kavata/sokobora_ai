@@ -9,7 +9,7 @@ function App() {
     <main style={{ maxWidth: 1200, margin: '0 auto', padding: 24 }}>
       <header>
         <h1>SokoBora AI</h1>
-        <p>Fresh produce marketplace and post-harvest impact.</p>
+        <p>Commercial produce trading for regional buyers and distributors.</p>
       </header>
       <ImpactDashboard />
       <FarmerListingForm />

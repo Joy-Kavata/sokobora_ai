@@ -3,11 +3,10 @@ import axios from 'axios';
 
 const ImpactDashboard = () => {
   const [metrics, setMetrics] = useState({
-    totalKgSaved: 2300,
-    totalCo2AvoidedKg: 3220,
-    totalFarmerRevenueKes: 118000,
-    activeFlashAuctions: 1,
-    successfulTransactions: 12
+    listedVolumeKg: 2300,
+    grossTradeValueKes: 118000,
+    activeListings: 12,
+    regionsRepresented: 4
   });
   const [loading, setLoading] = useState(false);
 
@@ -32,49 +31,49 @@ const ImpactDashboard = () => {
     <div className="max-w-5xl mx-auto p-6 bg-gray-50 rounded-xl border border-gray-200 shadow-sm my-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">SokoBora AI - Social & Environmental Impact</h2>
-          <p className="text-xs text-gray-500">Real-time metrics tracking post-harvest loss prevention across Kenyan counties.</p>
+          <h2 className="text-2xl font-bold text-gray-800">Commercial Trading Overview</h2>
+          <p className="text-xs text-gray-500">Current inventory, trade value, and regional market coverage.</p>
         </div>
         <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full">
-          Live System Metrics
+          Market Activity
         </span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Metric 1: Produce Saved */}
+        {/* Metric 1: Listed volume */}
         <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-          <p className="text-xs text-gray-500 font-semibold uppercase">Total Harvest Saved</p>
+          <p className="text-xs text-gray-500 font-semibold uppercase">Listed Volume</p>
           <p className="text-2xl font-extrabold text-green-600 mt-2">
-            {metrics.totalKgSaved.toLocaleString()} <span className="text-sm font-normal text-gray-500">kg</span>
+            {metrics.listedVolumeKg.toLocaleString()} <span className="text-sm font-normal text-gray-500">kg</span>
           </p>
-          <p className="text-xs text-gray-400 mt-1">Diverted from post-harvest waste</p>
+          <p className="text-xs text-gray-400 mt-1">Across current stock listings</p>
         </div>
 
-        {/* Metric 2: CO2 Avoided */}
+        {/* Metric 2: Trade value */}
         <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-          <p className="text-xs text-gray-500 font-semibold uppercase">CO2 Emissions Avoided</p>
+          <p className="text-xs text-gray-500 font-semibold uppercase">Indicative Trade Value</p>
           <p className="text-2xl font-extrabold text-emerald-600 mt-2">
-            {metrics.totalCo2AvoidedKg.toLocaleString()} <span className="text-sm font-normal text-gray-500">kg</span>
+            KES {metrics.grossTradeValueKes.toLocaleString()}
           </p>
-          <p className="text-xs text-gray-400 mt-1">1.4kg CO2 saved per kg produce</p>
+          <p className="text-xs text-gray-400 mt-1">Based on listed volume and asking price</p>
         </div>
 
-        {/* Metric 3: Farmer Income */}
+        {/* Metric 3: Active inventory */}
         <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-          <p className="text-xs text-gray-500 font-semibold uppercase">Farmer Income Secured</p>
+          <p className="text-xs text-gray-500 font-semibold uppercase">Active Listings</p>
           <p className="text-2xl font-extrabold text-blue-600 mt-2">
-            KES {metrics.totalFarmerRevenueKes.toLocaleString()}
+            {metrics.activeListings.toLocaleString()}
           </p>
-          <p className="text-xs text-gray-400 mt-1">Direct to smallholder accounts</p>
+          <p className="text-xs text-gray-400 mt-1">Available to regional buyers</p>
         </div>
 
-        {/* Metric 4: Active Flash Auctions */}
+        {/* Metric 4: Regional coverage */}
         <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-          <p className="text-xs text-gray-500 font-semibold uppercase">High Urgency Matches</p>
+          <p className="text-xs text-gray-500 font-semibold uppercase">Trading Regions</p>
           <p className="text-2xl font-extrabold text-red-600 mt-2">
-            {metrics.activeFlashAuctions} <span className="text-sm font-normal text-gray-500">active</span>
+            {metrics.regionsRepresented.toLocaleString()}
           </p>
-          <p className="text-xs text-gray-400 mt-1">AI Flash auctions underway</p>
+          <p className="text-xs text-gray-400 mt-1">Represented in active listings</p>
         </div>
       </div>
     </div>
