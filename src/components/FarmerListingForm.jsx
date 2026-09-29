@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../api';
 
 const FarmerListingForm = () => {
   const [formData, setFormData] = useState({
@@ -28,11 +28,10 @@ const FarmerListingForm = () => {
     setResult(null);
 
     try {
-      // POST to Express API endpoint
-      const response = await axios.post('http://localhost:5000/api/listings', formData);
+      const response = await api.post('/listings', formData);
       setResult(response.data.data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to submit produce listing');
+      setError(err.response?.data?.message || err.message || 'Failed to submit produce listing');
     } finally {
       setLoading(false);
     }

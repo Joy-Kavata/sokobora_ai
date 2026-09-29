@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 
 const ImpactDashboard = () => {
   const fallbackMetrics = {
@@ -17,7 +17,7 @@ const ImpactDashboard = () => {
 
   const fetchImpactMetrics = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/analytics/impact');
+      const response = await api.get('/analytics/impact');
       if (response.data?.data) {
         const data = response.data.data;
         setMetrics({

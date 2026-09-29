@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 
 const app = express();
@@ -37,9 +38,20 @@ app.post('/api/listings', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Product, region, positive volume, and asking price are required.' });
     }
 
+    const producer = await prisma.user.findUnique({
+      where: { id: farmerId || 'f47ac10b-58cc-4372-a567-0e02b2c3d479' },
+      select: { id: true }
+    });
+    if (!producer) {
+      return res.status(400).json({
+        success: false,
+        message: 'The producer account is missing from the connected database. Configure a valid producer account before listing stock.'
+      });
+    }
+
     const newListing = await prisma.produceListing.create({
       data: {
-        farmerId: farmerId || 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        farmerId: producer.id,
         cropType,
         quantityKg: volume,
         harvestDate: new Date(),

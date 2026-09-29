@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 
 const BuyerAuctionFeed = () => {
   const [listings, setListings] = useState([]);
@@ -8,6 +8,7 @@ const BuyerAuctionFeed = () => {
   const [bidAmount, setBidAmount] = useState('');
   const [bidSuccess, setBidSuccess] = useState('');
   const [bidError, setBidError] = useState('');
+  const [feedError, setFeedError] = useState('');
   
   // Example pre-seeded buyer UUID
   const buyerId = 'b18ac20c-48dd-4372-b567-0e02b2c3d980';
@@ -18,10 +19,11 @@ const BuyerAuctionFeed = () => {
 
   const fetchListings = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/listings');
+      const response = await api.get('/listings');
       setListings(response.data.data || []);
     } catch (err) {
       console.error('Error fetching listings:', err);
+      setFeedError(err.response?.data?.message || err.message || 'Could not load regional stock listings.');
     } finally {
       setLoading(false);
     }
@@ -40,7 +42,7 @@ const BuyerAuctionFeed = () => {
     setBidSuccess('');
 
     try {
-      const response = await axios.post('http://localhost:5000/api/bids', {
+      const response = await api.post('/bids', {
         listingId: selectedListing.id,
         buyerId: buyerId,
         bidAmountPerKg: parseFloat(bidAmount)
@@ -72,6 +74,12 @@ const BuyerAuctionFeed = () => {
           Refresh Feed
         </button>
       </div>
+
+      {feedError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-md">
+          {feedError}
+        </div>
+      )}
 
       {listings.length === 0 ? (
         <div className="p-8 text-center bg-gray-50 rounded-lg text-gray-500 border">
