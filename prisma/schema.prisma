@@ -35,6 +35,12 @@ enum BidStatus {
   OUTBID
 }
 
+enum EscrowStatus {
+  PENDING_DEPOSIT
+  FUNDS_HELD
+  RELEASED
+}
+
 model User {
   id            String           @id @default(uuid())
   fullName      String
@@ -121,6 +127,9 @@ model Transaction {
   kgSaved         Float
   co2AvoidedKg    Float
   pickupCode      String         @unique
+  escrowStatus    EscrowStatus   @default(PENDING_DEPOSIT)
+  depositRecordedAt DateTime?
+  fundsReleasedAt DateTime?
   
   createdAt       DateTime       @default(now())
 }

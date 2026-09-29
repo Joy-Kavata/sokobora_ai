@@ -1,0 +1,6 @@
+CREATE TYPE "EscrowStatus" AS ENUM ('PENDING_DEPOSIT', 'FUNDS_HELD', 'RELEASED');
+
+ALTER TABLE "Transaction"
+ADD COLUMN "escrowStatus" "EscrowStatus" NOT NULL DEFAULT 'PENDING_DEPOSIT',
+ADD COLUMN "depositRecordedAt" TIMESTAMP(3),
+ADD COLUMN "fundsReleasedAt" TIMESTAMP(3);

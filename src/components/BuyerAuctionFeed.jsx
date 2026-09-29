@@ -9,6 +9,9 @@ const BuyerAuctionFeed = () => {
   const [bidSuccess, setBidSuccess] = useState('');
   const [bidError, setBidError] = useState('');
   const [feedError, setFeedError] = useState('');
+  const [workflowMessage, setWorkflowMessage] = useState('');
+  const [workflowError, setWorkflowError] = useState('');
+  const [workflowBusy, setWorkflowBusy] = useState(false);
   
   // Example pre-seeded buyer UUID
   const buyerId = 'b18ac20c-48dd-4372-b567-0e02b2c3d980';
@@ -56,6 +59,36 @@ const BuyerAuctionFeed = () => {
     }
   };
 
+  const acceptBid = async (bidId) => {
+    setWorkflowBusy(true);
+    setWorkflowError('');
+    setWorkflowMessage('');
+    try {
+      const response = await api.post('/bids/accept', { bidId, farmerId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479' });
+      setWorkflowMessage(response.data.message);
+      await fetchListings();
+    } catch (err) {
+      setWorkflowError(err.response?.data?.message || 'Could not accept this bid.');
+    } finally {
+      setWorkflowBusy(false);
+    }
+  };
+
+  const advanceEscrow = async (transaction, action) => {
+    setWorkflowBusy(true);
+    setWorkflowError('');
+    setWorkflowMessage('');
+    try {
+      const response = await api.post(`/escrow/${action}`, { transactionId: transaction.id });
+      setWorkflowMessage(response.data.message);
+      await fetchListings();
+    } catch (err) {
+      setWorkflowError(err.response?.data?.message || 'Could not update escrow status.');
+    } finally {
+      setWorkflowBusy(false);
+    }
+  };
+
   if (loading) {
     return <div className="p-6 text-center text-gray-500">Loading SokoBora AI marketplace feed...</div>;
   }
@@ -79,6 +112,13 @@ const BuyerAuctionFeed = () => {
         <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-md">
           {feedError}
         </div>
+      )}
+
+      {workflowError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-md">{workflowError}</div>
+      )}
+      {workflowMessage && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-800 text-sm rounded-md">{workflowMessage}</div>
       )}
 
       {listings.length === 0 ? (
@@ -116,6 +156,31 @@ const BuyerAuctionFeed = () => {
                       </span>
                     </div>
                   </div>
+                  {listing.transaction && (
+                    <EscrowTracker
+                      transaction={listing.transaction}
+                      busy={workflowBusy}
+                      onAdvance={advanceEscrow}
+                    />
+                  )}
+                  {!listing.transaction && listing.bids?.some((bid) => bid.status === 'PENDING') && (
+                    <div className="mb-4 border border-amber-200 bg-amber-50 p-3 rounded">
+                      <p className="text-xs font-semibold text-amber-900 mb-2">Buyer bids awaiting acceptance</p>
+                      {listing.bids.filter((bid) => bid.status === 'PENDING').map((bid) => (
+                        <div key={bid.id} className="flex items-center justify-between gap-2 py-1">
+                          <span className="text-xs text-gray-700">KES {bid.bidAmountPerKg}/kg</span>
+                          <button
+                            type="button"
+                            onClick={() => acceptBid(bid.id)}
+                            disabled={workflowBusy}
+                            className="px-2.5 py-1.5 bg-amber-700 text-white text-xs font-semibold rounded disabled:opacity-50"
+                          >
+                            Accept bid
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <button
@@ -201,3 +266,50 @@ const BuyerAuctionFeed = () => {
 };
 
 export default BuyerAuctionFeed;
+
+function EscrowTracker({ transaction, busy, onAdvance }) {
+  const steps = [
+    { key: 'PENDING_DEPOSIT', label: 'Deposit pending' },
+    { key: 'FUNDS_HELD', label: 'Funds recorded as held' },
+    { key: 'RELEASED', label: 'Release recorded' }
+  ];
+  const currentIndex = steps.findIndex((step) => step.key === transaction.escrowStatus);
+  const nextAction = transaction.escrowStatus === 'PENDING_DEPOSIT'
+    ? { path: 'deposit', label: 'Record deposit received' }
+    : transaction.escrowStatus === 'FUNDS_HELD'
+      ? { path: 'release', label: 'Record release' }
+      : null;
+
+  return (
+    <section className="mb-4 p-3 border border-green-200 bg-green-50 rounded" aria-label="Escrow status tracker">
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <h4 className="text-xs font-bold text-green-950">NESCRO escrow workflow</h4>
+        <span className="text-[10px] text-green-900">Status tracking only</span>
+      </div>
+      <ol className="space-y-2">
+        {steps.map((step, index) => {
+          const complete = index <= currentIndex;
+          return (
+            <li key={step.key} className="flex items-center gap-2 text-xs">
+              <span className={`flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-bold ${complete ? 'border-green-700 bg-green-700 text-white' : 'border-gray-300 bg-white text-gray-500'}`}>
+                {complete ? '✓' : index + 1}
+              </span>
+              <span className={complete ? 'font-semibold text-green-950' : 'text-gray-600'}>{step.label}</span>
+            </li>
+          );
+        })}
+      </ol>
+      {nextAction && (
+        <button
+          type="button"
+          onClick={() => onAdvance(transaction, nextAction.path)}
+          disabled={busy}
+          className="mt-3 w-full rounded bg-green-800 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+        >
+          {busy ? 'Updating status...' : nextAction.label}
+        </button>
+      )}
+      <p className="mt-2 text-[10px] leading-4 text-gray-600">This prototype records escrow workflow states only. No payment or fund transfer is connected.</p>
+    </section>
+  );
+}

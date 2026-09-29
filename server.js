@@ -15,9 +15,9 @@ app.get('/api/listings', async (req, res) => {
   try {
     const listings = await prisma.produceListing.findMany({
       include: {
+        transaction: true,
         bids: {
           orderBy: { bidAmountPerKg: 'desc' },
-          take: 1
         }
       },
       orderBy: { createdAt: 'desc' }
@@ -150,3 +150,70 @@ app.get('/api/analytics/impact', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`SokoBora AI Backend running on http://localhost:${PORT}`);
 });
+
+app.post('/api/bids/accept', async (req, res) => {
+  try {
+    const { bidId, farmerId = 'f47ac10b-58cc-4372-a567-0e02b2c3d479' } = req.body;
+    const bid = await prisma.bid.findUnique({ where: { id: bidId }, include: { listing: true } });
+    if (!bid) return res.status(404).json({ success: false, message: 'Bid not found.' });
+    if (bid.listing.farmerId !== farmerId) return res.status(403).json({ success: false, message: 'You cannot accept bids for this listing.' });
+    if (bid.status !== 'PENDING' || bid.listing.status !== 'ACTIVE') {
+      return res.status(409).json({ success: false, message: 'This bid or listing is no longer available.' });
+    }
+
+    const pickupCode = `SB-${require('crypto').randomBytes(4).toString('hex').toUpperCase()}`;
+    const transaction = await prisma.$transaction(async (tx) => {
+      await tx.bid.update({ where: { id: bid.id }, data: { status: 'ACCEPTED' } });
+      await tx.produceListing.update({ where: { id: bid.listingId }, data: { status: 'LOCKED' } });
+      await tx.bid.updateMany({
+        where: { listingId: bid.listingId, id: { not: bid.id }, status: 'PENDING' },
+        data: { status: 'REJECTED' }
+      });
+      return tx.transaction.create({
+        data: {
+          listingId: bid.listingId,
+          finalPricePerKg: bid.bidAmountPerKg,
+          totalAmount: bid.totalValue,
+          kgSaved: bid.listing.quantityKg,
+          co2AvoidedKg: Number((bid.listing.quantityKg * 1.4).toFixed(2)),
+          pickupCode,
+          escrowStatus: 'PENDING_DEPOSIT'
+        }
+      });
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Bid accepted. Escrow tracking started; no funds were moved.',
+      data: { bid, transaction }
+    });
+  } catch (error) {
+    console.error('Error accepting bid:', error);
+    return res.status(500).json({ success: false, message: 'Could not accept bid. Check the database connection and migration.' });
+  }
+});
+
+app.post('/api/escrow/deposit', async (req, res) => updateEscrowState(req, res, 'PENDING_DEPOSIT', 'FUNDS_HELD', 'depositRecordedAt'));
+app.post('/api/escrow/release', async (req, res) => updateEscrowState(req, res, 'FUNDS_HELD', 'RELEASED', 'fundsReleasedAt'));
+
+async function updateEscrowState(req, res, expectedStatus, nextStatus, timestampField) {
+  try {
+    const { transactionId } = req.body;
+    const result = await prisma.transaction.updateMany({
+      where: { id: transactionId, escrowStatus: expectedStatus },
+      data: { escrowStatus: nextStatus, [timestampField]: new Date() }
+    });
+    if (result.count !== 1) {
+      return res.status(409).json({ success: false, message: 'Transaction is missing or is not in the required escrow state.' });
+    }
+    const transaction = await prisma.transaction.findUnique({ where: { id: transactionId } });
+    return res.status(200).json({
+      success: true,
+      message: `Escrow status updated to ${nextStatus}. This records workflow status only; it does not move funds.`,
+      data: transaction
+    });
+  } catch (error) {
+    console.error('Error updating escrow state:', error);
+    return res.status(500).json({ success: false, message: 'Could not update escrow status. Check the database migration.' });
+  }
+}

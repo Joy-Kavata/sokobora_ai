@@ -7,10 +7,10 @@ module.exports = async function handler(req, res) {
     try {
       const listings = await prisma.produceListing.findMany({
         include: {
+          transaction: true,
           bids: {
-            orderBy: { bidAmountPerKg: 'desc' },
-            take: 1
-          }
+            orderBy: { bidAmountPerKg: 'desc' }
+          },
         },
         orderBy: { createdAt: 'desc' }
       });
