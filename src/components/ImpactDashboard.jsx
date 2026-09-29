@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const ImpactDashboard = () => {
-  const [metrics, setMetrics] = useState({
+  const fallbackMetrics = {
     listedVolumeKg: 2300,
     grossTradeValueKes: 118000,
     activeListings: 12,
     regionsRepresented: 4
-  });
+  };
+  const [metrics, setMetrics] = useState(fallbackMetrics);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -18,7 +19,13 @@ const ImpactDashboard = () => {
     try {
       const response = await axios.get('http://localhost:5000/api/analytics/impact');
       if (response.data?.data) {
-        setMetrics(response.data.data);
+        const data = response.data.data;
+        setMetrics({
+          listedVolumeKg: Number(data.listedVolumeKg ?? data.totalKgSaved ?? fallbackMetrics.listedVolumeKg),
+          grossTradeValueKes: Number(data.grossTradeValueKes ?? data.totalFarmerRevenueKes ?? fallbackMetrics.grossTradeValueKes),
+          activeListings: Number(data.activeListings ?? data.successfulTransactions ?? fallbackMetrics.activeListings),
+          regionsRepresented: Number(data.regionsRepresented ?? fallbackMetrics.regionsRepresented)
+        });
       }
     } catch (error) {
       console.log('Using seeded fallback metrics for demonstration');
