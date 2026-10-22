@@ -1,10 +1,12 @@
 const prisma = require('../lib/prisma');
-
-const DEFAULT_FARMER_ID = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+const { getAuthenticatedUser } = require('../lib/auth');
 
 module.exports = async function handler(req, res) {
   if (req.method === 'GET') {
     try {
+      const user = await getAuthenticatedUser(req, prisma);
+      if (!user) return res.status(401).json({ success: false, message: 'Please sign in to continue.' });
+
       const listings = await prisma.produceListing.findMany({
         include: {
           transaction: true,
@@ -28,7 +30,6 @@ module.exports = async function handler(req, res) {
   }
 
   const {
-    farmerId = DEFAULT_FARMER_ID,
     cropType,
     quantityKg,
     county,
@@ -48,17 +49,12 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const producer = await prisma.user.findUnique({ where: { id: farmerId }, select: { id: true } });
-    if (!producer) {
-      return res.status(400).json({
-        success: false,
-        message: 'The producer account is missing from the connected database. Configure a valid producer account before listing stock.'
-      });
-    }
+    const user = await getAuthenticatedUser(req, prisma);
+    if (!user) return res.status(401).json({ success: false, message: 'Please sign in to continue.' });
 
     const listing = await prisma.produceListing.create({
       data: {
-        farmerId: producer.id,
+        farmerId: user.id,
         cropType,
         quantityKg: volume,
         harvestDate: new Date(),

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 
-const BuyerAuctionFeed = () => {
+const BuyerAuctionFeed = ({ user }) => {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedListing, setSelectedListing] = useState(null);
@@ -13,9 +13,6 @@ const BuyerAuctionFeed = () => {
   const [workflowError, setWorkflowError] = useState('');
   const [workflowBusy, setWorkflowBusy] = useState(false);
   
-  // Example pre-seeded buyer UUID
-  const buyerId = 'b18ac20c-48dd-4372-b567-0e02b2c3d980';
-
   useEffect(() => {
     fetchListings();
   }, []);
@@ -47,7 +44,7 @@ const BuyerAuctionFeed = () => {
     try {
       const response = await api.post('/bids', {
         listingId: selectedListing.id,
-        buyerId: buyerId,
+        buyerId: user.id,
         bidAmountPerKg: parseFloat(bidAmount)
       });
 
@@ -64,7 +61,7 @@ const BuyerAuctionFeed = () => {
     setWorkflowError('');
     setWorkflowMessage('');
     try {
-      const response = await api.post('/bids/accept', { bidId, farmerId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479' });
+      const response = await api.post('/bids/accept', { bidId, farmerId: user.id });
       setWorkflowMessage(response.data.message);
       await fetchListings();
     } catch (err) {

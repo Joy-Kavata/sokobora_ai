@@ -7,8 +7,29 @@ const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+  credentials: true
+}));
 app.use(express.json());
+
+app.all('/api/auth/register', require('./api/auth/register'));
+app.all('/api/auth/login', require('./api/auth/login'));
+app.all('/api/auth/me', require('./api/auth/me'));
+app.all('/api/auth/logout', require('./api/auth/logout'));
+
+app.use('/api', async (req, res, next) => {
+  try {
+    const { getAuthenticatedUser } = require('./lib/auth');
+    const user = await getAuthenticatedUser(req, prisma);
+    if (!user) return res.status(401).json({ success: false, message: 'Please sign in to continue.' });
+    req.user = user;
+    return next();
+  } catch (error) {
+    console.error('Error verifying API session:', error);
+    return res.status(500).json({ success: false, message: 'Could not verify your account session.' });
+  }
+});
 
 // 1. GET ALL ACTIVE STOCK LISTINGS
 app.get('/api/listings', async (req, res) => {
@@ -31,27 +52,16 @@ app.get('/api/listings', async (req, res) => {
 // 2. POST NEW FARMER LISTING (Calls FastAPI ML Engine + Saves to DB)
 app.post('/api/listings', async (req, res) => {
   try {
-    const { farmerId, cropType, quantityKg, county, subCounty, latitude, longitude, startingPricePerKg } = req.body;
+    const { cropType, quantityKg, county, subCounty, latitude, longitude, startingPricePerKg } = req.body;
     const volume = Number(quantityKg);
     const askingPrice = Number(startingPricePerKg);
     if (!cropType || !county || !Number.isFinite(volume) || volume <= 0 || !Number.isFinite(askingPrice) || askingPrice <= 0) {
       return res.status(400).json({ success: false, message: 'Product, region, positive volume, and asking price are required.' });
     }
 
-    const producer = await prisma.user.findUnique({
-      where: { id: farmerId || 'f47ac10b-58cc-4372-a567-0e02b2c3d479' },
-      select: { id: true }
-    });
-    if (!producer) {
-      return res.status(400).json({
-        success: false,
-        message: 'The producer account is missing from the connected database. Configure a valid producer account before listing stock.'
-      });
-    }
-
     const newListing = await prisma.produceListing.create({
       data: {
-        farmerId: producer.id,
+        farmerId: req.user.id,
         cropType,
         quantityKg: volume,
         harvestDate: new Date(),
@@ -79,7 +89,7 @@ app.post('/api/listings', async (req, res) => {
 // 3. POST PLACE BID
 app.post('/api/bids', async (req, res) => {
   try {
-    const { listingId, buyerId, bidAmountPerKg } = req.body;
+    const { listingId, bidAmountPerKg } = req.body;
     const bidVal = parseFloat(bidAmountPerKg);
 
     const listing = await prisma.produceListing.findUnique({
@@ -103,7 +113,7 @@ app.post('/api/bids', async (req, res) => {
     const newBid = await prisma.bid.create({
       data: {
         listingId,
-        buyerId,
+        buyerId: req.user.id,
         bidAmountPerKg: bidVal,
         totalValue: totalVal,
         status: 'PENDING'
@@ -124,6 +134,10 @@ app.post('/api/bids', async (req, res) => {
 // 4. GET IMPACT METRICS (Calculated Live from DB)
 app.get('/api/analytics/impact', async (req, res) => {
   try {
+    if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Only system administrators can view the commercial trading overview.' });
+    }
+
     const listings = await prisma.produceListing.findMany({
       include: { transaction: true }
     });
@@ -153,10 +167,10 @@ app.listen(PORT, () => {
 
 app.post('/api/bids/accept', async (req, res) => {
   try {
-    const { bidId, farmerId = 'f47ac10b-58cc-4372-a567-0e02b2c3d479' } = req.body;
+    const { bidId } = req.body;
     const bid = await prisma.bid.findUnique({ where: { id: bidId }, include: { listing: true } });
     if (!bid) return res.status(404).json({ success: false, message: 'Bid not found.' });
-    if (bid.listing.farmerId !== farmerId) return res.status(403).json({ success: false, message: 'You cannot accept bids for this listing.' });
+    if (bid.listing.farmerId !== req.user.id) return res.status(403).json({ success: false, message: 'You cannot accept bids for this listing.' });
     if (bid.status !== 'PENDING' || bid.listing.status !== 'ACTIVE') {
       return res.status(409).json({ success: false, message: 'This bid or listing is no longer available.' });
     }

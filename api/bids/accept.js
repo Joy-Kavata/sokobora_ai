@@ -1,7 +1,6 @@
 const crypto = require('crypto');
 const prisma = require('../../lib/prisma');
-
-const DEFAULT_FARMER_ID = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+const { getAuthenticatedUser } = require('../../lib/auth');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -9,18 +8,21 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ success: false, message: 'Method not allowed.' });
   }
 
-  const { bidId, farmerId = DEFAULT_FARMER_ID } = req.body || {};
+  const { bidId } = req.body || {};
   if (!bidId) {
     return res.status(400).json({ success: false, message: 'A bid is required.' });
   }
 
   try {
+    const user = await getAuthenticatedUser(req, prisma);
+    if (!user) return res.status(401).json({ success: false, message: 'Please sign in to continue.' });
+
     const accepted = await prisma.$transaction(async (tx) => {
       const bid = await tx.bid.findUnique({ where: { id: bidId }, include: { listing: true } });
       if (!bid) {
         return { error: { status: 404, message: 'Bid not found.' } };
       }
-      if (bid.listing.farmerId !== farmerId) {
+      if (bid.listing.farmerId !== user.id) {
         return { error: { status: 403, message: 'You cannot accept bids for this listing.' } };
       }
       if (bid.status !== 'PENDING' || bid.listing.status !== 'ACTIVE') {

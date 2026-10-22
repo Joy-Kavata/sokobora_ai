@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import api from '../api';
 
-const FarmerListingForm = () => {
+const FarmerListingForm = ({ user }) => {
   const [formData, setFormData] = useState({
-    farmerId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // Example pre-seeded farmer UUID
+    farmerId: user.id,
     cropType: 'Tomatoes',
     quantityKg: '',
     county: 'Kiambu',

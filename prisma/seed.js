@@ -1,8 +1,10 @@
 const { PrismaClient } = require('@prisma/client');
+const { hashPassword } = require('../lib/auth');
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('Seeding SokoBora AI database...');
+  const seedPasswordHash = await hashPassword('hashed_password_123');
 
   // 1. Clean existing records
   await prisma.transaction.deleteMany();
@@ -18,7 +20,7 @@ async function main() {
       fullName: 'Jane Wanjiku',
       email: 'jane.wanjiku@farm.co.ke',
       phone: '+254712345678',
-      passwordHash: 'hashed_password_123',
+      passwordHash: seedPasswordHash,
       role: 'FARMER',
       businessName: 'Kiambu Green Acres',
       county: 'Kiambu',
@@ -34,7 +36,7 @@ async function main() {
       fullName: 'Peter Njoroge',
       email: 'peter.njoroge@farm.co.ke',
       phone: '+254722345679',
-      passwordHash: 'hashed_password_123',
+      passwordHash: seedPasswordHash,
       role: 'FARMER',
       businessName: 'Rift Valley Fresh Produce',
       county: 'Nakuru',
@@ -50,7 +52,7 @@ async function main() {
       fullName: 'David Ochieng',
       email: 'procurement@citysupermarket.co.ke',
       phone: '+254733345680',
-      passwordHash: 'hashed_password_123',
+      passwordHash: seedPasswordHash,
       role: 'BUYER',
       businessName: 'City Supermarket Ltd',
       county: 'Nairobi',
@@ -66,7 +68,7 @@ async function main() {
       fullName: 'Grace Muthoni',
       email: 'supplies@safarihotel.co.ke',
       phone: '+254744345681',
-      passwordHash: 'hashed_password_123',
+      passwordHash: seedPasswordHash,
       role: 'BUYER',
       businessName: 'Safari Grand Hotel',
       county: 'Nairobi',

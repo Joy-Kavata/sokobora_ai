@@ -1,4 +1,5 @@
 const prisma = require('../../lib/prisma');
+const { getAuthenticatedUser } = require('../../lib/auth');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -7,6 +8,14 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    const user = await getAuthenticatedUser(req, prisma);
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Please sign in to continue.' });
+    }
+    if (user.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Only system administrators can view the commercial trading overview.' });
+    }
+
     const listings = await prisma.produceListing.findMany({
       where: { status: 'ACTIVE' },
       select: { quantityKg: true, startingPricePerKg: true, county: true }

@@ -1,4 +1,5 @@
 const prisma = require('../lib/prisma');
+const { getAuthenticatedUser } = require('../lib/auth');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -6,14 +7,17 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ success: false, message: 'Method not allowed.' });
   }
 
-  const { listingId, buyerId, bidAmountPerKg } = req.body || {};
+  const { listingId, bidAmountPerKg } = req.body || {};
   const bidAmount = Number(bidAmountPerKg);
 
-  if (!listingId || !buyerId || !Number.isFinite(bidAmount) || bidAmount <= 0) {
-    return res.status(400).json({ success: false, message: 'A listing, buyer account, and positive bid are required.' });
+  if (!listingId || !Number.isFinite(bidAmount) || bidAmount <= 0) {
+    return res.status(400).json({ success: false, message: 'A listing and positive bid are required.' });
   }
 
   try {
+    const user = await getAuthenticatedUser(req, prisma);
+    if (!user) return res.status(401).json({ success: false, message: 'Please sign in to continue.' });
+
     const listing = await prisma.produceListing.findUnique({ where: { id: listingId } });
     if (!listing) {
       return res.status(404).json({ success: false, message: 'Listing not found.' });
@@ -29,7 +33,7 @@ module.exports = async function handler(req, res) {
       prisma.bid.create({
         data: {
           listingId,
-          buyerId,
+          buyerId: user.id,
           bidAmountPerKg: bidAmount,
           totalValue: bidAmount * listing.quantityKg,
           status: 'PENDING'
