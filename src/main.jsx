@@ -2,12 +2,11 @@ import React, { useState } from 'react';
 import api from '../api';
 
 export default function RegisterForm({ onAuthenticated }) {
-
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     password: '',
-    role: 'BUYER', // Default role option
+    role: 'BUYER',
     businessName: '',
     county: '',
     subCounty: '',
@@ -70,6 +69,13 @@ export default function RegisterForm({ onAuthenticated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Ensure location coordinates aren't left empty or null
+    if (!formData.latitude || !formData.longitude) {
+      setError('Please click "Detect My Current Location Automatically" to capture your coordinates before registering.');
+      return;
+    }
+
     try {
       const response = await api.post('/auth/register', formData);
       onAuthenticated(response.data.data);
@@ -84,7 +90,6 @@ export default function RegisterForm({ onAuthenticated }) {
       
       {error && <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>}
 
-      {/* Standard fields like Name, Email, Password, Role Dropdown */}
       <div>
         <label className="block text-sm font-medium text-slate-700">Full Name</label>
         <input 
@@ -127,6 +132,7 @@ export default function RegisterForm({ onAuthenticated }) {
           name="role" 
           value={formData.role} 
           onChange={handleChange} 
+          required
           className="mt-1 w-full rounded border border-slate-300 p-2 bg-white"
         >
           <option value="BUYER">Buyer</option>
@@ -134,9 +140,46 @@ export default function RegisterForm({ onAuthenticated }) {
         </select>
       </div>
 
-      {/* 3. Location Detection Widget Integration */}
+      <div>
+        <label className="block text-sm font-medium text-slate-700">Business Name</label>
+        <input 
+          type="text" 
+          name="businessName" 
+          value={formData.businessName} 
+          onChange={handleChange} 
+          required 
+          className="mt-1 w-full rounded border border-slate-300 p-2"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="block text-sm font-medium text-slate-700">County</label>
+          <input 
+            type="text" 
+            name="county" 
+            value={formData.county} 
+            onChange={handleChange} 
+            required 
+            className="mt-1 w-full rounded border border-slate-300 p-2"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700">Sub-County</label>
+          <input 
+            type="text" 
+            name="subCounty" 
+            value={formData.subCounty} 
+            onChange={handleChange} 
+            required 
+            className="mt-1 w-full rounded border border-slate-300 p-2"
+          />
+        </div>
+      </div>
+
+      {/* Geolocation Section */}
       <div className="border-t border-slate-200 pt-4">
-        <label className="block text-sm font-medium text-slate-700 mb-1">Your Delivery / Farm Location</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">GPS Coordinates (Required)</label>
         <button
           type="button"
           onClick={handleDetectLocation}
