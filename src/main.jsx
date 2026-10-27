@@ -5,6 +5,7 @@ import AuthPage from './components/AuthPage';
 import BuyerAuctionFeed from './components/BuyerAuctionFeed';
 import FarmerListingForm from './components/FarmerListingForm';
 import ImpactDashboard from './components/ImpactDashboard';
+import AdminUserManagement from './components/AdminUserManagement';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -73,7 +74,12 @@ function App() {
           {sessionError}
         </div>
       )}
-      {user.role === 'ADMIN' && <ImpactDashboard />}
+      {user.role === 'ADMIN' && (
+        <>
+          <ImpactDashboard />
+          <AdminUserManagement currentUserId={user.id} />
+        </>
+      )}
       <FarmerListingForm user={user} />
       <BuyerAuctionFeed user={user} />
     </main>
