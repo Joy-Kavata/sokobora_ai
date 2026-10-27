@@ -7,7 +7,7 @@ export default function AuthPage({ onAuthenticated }) {
     fullName: '',
     phone: '',
     county: '',
-    role: 'BUYER', // Default to Buyer
+    role: 'BUYER', // Default
     businessName: '',
     email: '',
     password: '',
@@ -18,6 +18,7 @@ export default function AuthPage({ onAuthenticated }) {
   const [locationStatus, setLocationStatus] = useState('');
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [error, setError] = useState('');
+  const hasLocation = formData.latitude !== '' && formData.longitude !== '';
 
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
@@ -71,13 +72,19 @@ export default function AuthPage({ onAuthenticated }) {
     e.preventDefault();
     setError('');
 
-    if (!formData.latitude || !formData.longitude) {
+    const latitude = Number(formData.latitude);
+    const longitude = Number(formData.longitude);
+    if (
+      formData.latitude === '' || formData.longitude === '' ||
+      !Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+      !Number.isFinite(longitude) || longitude < -180 || longitude > 180
+    ) {
       setError('Please click "Detect My Current Location" to capture your coordinates before creating an account.');
       return;
     }
 
     try {
-      const response = await api.post('/auth/register', formData);
+      const response = await api.post('/auth/register', { ...formData, latitude, longitude });
       onAuthenticated(response.data.data);
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please check your inputs.');
@@ -190,7 +197,7 @@ export default function AuthPage({ onAuthenticated }) {
             {loadingLocation ? 'Detecting...' : '📍 Detect My Current Location Automatically'}
           </button>
           {locationStatus && (
-            <p className={`mt-2 text-xs ${formData.latitude ? 'text-green-600 font-medium' : 'text-orange-600'}`}>
+            <p className={`mt-2 text-xs ${hasLocation ? 'text-green-600 font-medium' : 'text-orange-600'}`}>
               {locationStatus}
             </p>
           )}

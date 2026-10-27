@@ -7,19 +7,33 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ success: false, message: 'Method not allowed.' });
   }
 
-  const { fullName, email, password, phone, county, role = 'FARMER', businessName } = req.body || {};
+  const {
+    fullName,
+    email,
+    password,
+    phone,
+    county,
+    role = 'FARMER',
+    businessName,
+    latitude,
+    longitude
+  } = req.body || {};
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  const parsedLatitude = Number(latitude);
+  const parsedLongitude = Number(longitude);
   if (
     typeof fullName !== 'string' || !fullName.trim() ||
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) ||
     typeof password !== 'string' || password.length < 8 || password.length > 128 ||
     typeof phone !== 'string' || !phone.trim() ||
     typeof county !== 'string' || !county.trim() ||
+    latitude === '' || latitude == null || !Number.isFinite(parsedLatitude) || parsedLatitude < -90 || parsedLatitude > 90 ||
+    longitude === '' || longitude == null || !Number.isFinite(parsedLongitude) || parsedLongitude < -180 || parsedLongitude > 180 ||
     !['FARMER', 'BUYER'].includes(role)
   ) {
     return res.status(400).json({
       success: false,
-      message: 'Enter your name, a valid email, a password between 8 and 128 characters, phone, county, and a valid account type.'
+      message: 'Enter your name, a valid email, a password between 8 and 128 characters, phone, county, valid location coordinates, and a valid account type.'
     });
   }
 
@@ -32,6 +46,8 @@ module.exports = async function handler(req, res) {
         passwordHash: await hashPassword(password),
         phone: phone.trim(),
         county: county.trim(),
+        latitude: parsedLatitude,
+        longitude: parsedLongitude,
         role,
         businessName: typeof businessName === 'string' && businessName.trim() ? businessName.trim() : null
       },
