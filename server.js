@@ -13,11 +13,11 @@ app.use(cors({
 }));
 app.use(express.json());
 
-app.all('/api/auth/register', require('./api/auth/register'));
-app.all('/api/auth/login', require('./api/auth/login'));
-app.all('/api/auth/me', require('./api/auth/me'));
-app.all('/api/auth/logout', require('./api/auth/logout'));
-app.all('/api/admin/users', require('./api/admin/users'));
+app.all('/api/auth/register', require('./lib/api/auth/register'));
+app.all('/api/auth/login', require('./lib/api/auth/login'));
+app.all('/api/auth/me', require('./lib/api/auth/me'));
+app.all('/api/auth/logout', require('./lib/api/auth/logout'));
+app.all('/api/admin/users', require('./lib/api/admin/users'));
 
 app.use('/api', async (req, res, next) => {
   try {

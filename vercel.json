@@ -8,7 +8,7 @@
     },
     {
       "source": "/api/(.*)",
-      "destination": "/api/index.js"
+      "destination": "/api/node/index?__route=/$1"
     },
     {
       "source": "/(.*)",

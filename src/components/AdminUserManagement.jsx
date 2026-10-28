@@ -48,7 +48,7 @@ const AdminUserManagement = ({ currentUserId }) => {
     setBusyUserId(user.id);
     setError('');
     try {
-      await api.delete('/admin/users', { params: { id: user.id } });
+      await api.delete('/admin/users', { data: { id: user.id } });
       setUsers((currentUsers) => currentUsers.filter((currentUser) => currentUser.id !== user.id));
     } catch (requestError) {
       setError(requestError.response?.data?.message || 'Could not delete this user. Please try again.');
