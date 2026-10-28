@@ -4,6 +4,8 @@
 
 Visitors can create a farmer or buyer account from the sign-in page. Successful registration and sign-in take the user to the commodity exchange. Administrator access cannot be selected during registration; an existing account must be promoted by a trusted database operator. Only accounts with the `ADMIN` role can view the Commercial Trading Overview, and its analytics API enforces the same check.
 
+The application separates signed-in dashboards by role: farmers can publish and manage their own listings and review incoming bids; buyers can browse the marketplace and place bids; administrators can view platform metrics and manage user roles. Listing creation, bidding, bid acceptance, and escrow status updates are also checked by the API against the signed-in user's role and listing ownership.
+
 Set `SESSION_SECRET` to a random value of at least 32 characters for both the API and application. For local development, set `CLIENT_ORIGIN` if the Vite client is served from an origin other than `http://localhost:5173`.
 
 The Vercel deployment uses one Node serverless function at `api/node/index.js` for the application API and a separate Python function at `api/index.py` for the AI service. Keep API handler modules outside the `api/` directory (they live under `lib/api/`) so Vercel does not deploy each handler as an additional serverless function.

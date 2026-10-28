@@ -11,6 +11,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [sessionError, setSessionError] = useState('');
+  const [listingRefreshKey, setListingRefreshKey] = useState(0);
 
   useEffect(() => {
     api.get('/auth/me')
@@ -74,14 +75,26 @@ function App() {
           {sessionError}
         </div>
       )}
-      {user.role === 'ADMIN' && (
+      {user.role === 'ADMIN' ? (
         <>
           <ImpactDashboard />
           <AdminUserManagement currentUserId={user.id} />
         </>
+      ) : user.role === 'FARMER' ? (
+        <>
+          <FarmerListingForm
+            user={user}
+            onListingCreated={() => setListingRefreshKey((key) => key + 1)}
+          />
+          <BuyerAuctionFeed key={listingRefreshKey} user={user} />
+        </>
+      ) : user.role === 'BUYER' ? (
+        <BuyerAuctionFeed user={user} />
+      ) : (
+        <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+          This account has an unsupported role. Please contact an administrator.
+        </p>
       )}
-      <FarmerListingForm user={user} />
-      <BuyerAuctionFeed user={user} />
     </main>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api';
 
 const BuyerAuctionFeed = ({ user }) => {
+  const isFarmer = user.role === 'FARMER';
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedListing, setSelectedListing] = useState(null);
@@ -94,8 +95,14 @@ const BuyerAuctionFeed = ({ user }) => {
     <div className="max-w-5xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Regional Stock Exchange</h2>
-          <p className="text-sm text-gray-600">Available commercial volumes for buyers, wholesalers, and distributors.</p>
+          <h2 className="text-2xl font-bold text-gray-800">
+            {isFarmer ? 'My Produce & Incoming Bids' : 'Regional Stock Exchange'}
+          </h2>
+          <p className="text-sm text-gray-600">
+            {isFarmer
+              ? 'Track your listings, review buyer bids, and update your transaction workflow.'
+              : 'Browse available produce and place bids on commercial volumes.'}
+          </p>
         </div>
         <button 
           onClick={fetchListings}
@@ -153,14 +160,14 @@ const BuyerAuctionFeed = ({ user }) => {
                       </span>
                     </div>
                   </div>
-                  {listing.transaction && (
+                  {isFarmer && listing.transaction && (
                     <EscrowTracker
                       transaction={listing.transaction}
                       busy={workflowBusy}
                       onAdvance={advanceEscrow}
                     />
                   )}
-                  {!listing.transaction && listing.bids?.some((bid) => bid.status === 'PENDING') && (
+                  {isFarmer && !listing.transaction && listing.bids?.some((bid) => bid.status === 'PENDING') && (
                     <div className="mb-4 border border-amber-200 bg-amber-50 p-3 rounded">
                       <p className="text-xs font-semibold text-amber-900 mb-2">Buyer bids awaiting acceptance</p>
                       {listing.bids.filter((bid) => bid.status === 'PENDING').map((bid) => (
@@ -180,17 +187,19 @@ const BuyerAuctionFeed = ({ user }) => {
                   )}
                 </div>
 
-                <button
-                  onClick={() => handleOpenBidModal(listing)}
-                  disabled={listing.status === 'LOCKED'}
-                  className={`w-full py-2 text-xs font-bold rounded transition ${
-                    listing.status === 'LOCKED'
-                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                      : 'bg-green-600 hover:bg-green-700 text-white'
-                  }`}
-                >
-                  {listing.status === 'LOCKED' ? 'Order Locked' : 'Place Bid Now'}
-                </button>
+                {!isFarmer && (
+                  <button
+                    onClick={() => handleOpenBidModal(listing)}
+                    disabled={listing.status === 'LOCKED'}
+                    className={`w-full py-2 text-xs font-bold rounded transition ${
+                      listing.status === 'LOCKED'
+                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                        : 'bg-green-600 hover:bg-green-700 text-white'
+                    }`}
+                  >
+                    {listing.status === 'LOCKED' ? 'Order Locked' : 'Place Bid Now'}
+                  </button>
+                )}
               </div>
             );
           })}

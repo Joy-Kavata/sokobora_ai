@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import api from '../api';
 
-const FarmerListingForm = ({ user }) => {
+const FarmerListingForm = ({ user, onListingCreated }) => {
   const [formData, setFormData] = useState({
     farmerId: user.id,
     cropType: 'Tomatoes',
@@ -30,6 +30,7 @@ const FarmerListingForm = ({ user }) => {
     try {
       const response = await api.post('/listings', formData);
       setResult(response.data.data);
+      onListingCreated?.();
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to submit produce listing');
     } finally {
