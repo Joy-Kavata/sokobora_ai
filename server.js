@@ -18,7 +18,6 @@ app.all('/api/auth/login', require('./api/auth/login'));
 app.all('/api/auth/me', require('./api/auth/me'));
 app.all('/api/auth/logout', require('./api/auth/logout'));
 app.all('/api/admin/users', require('./api/admin/users'));
-app.all('/api/admin/users/:id', require('./api/admin/users/[id]'));
 
 app.use('/api', async (req, res, next) => {
   try {

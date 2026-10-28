@@ -27,7 +27,7 @@ const AdminUserManagement = ({ currentUserId }) => {
     setBusyUserId(user.id);
     setError('');
     try {
-      const response = await api.patch(`/admin/users/${user.id}`, { role });
+      const response = await api.patch('/admin/users', { id: user.id, role });
       setUsers((currentUsers) => currentUsers.map((currentUser) => (
         currentUser.id === user.id ? { ...currentUser, role: response.data.data.role } : currentUser
       )));
@@ -48,7 +48,7 @@ const AdminUserManagement = ({ currentUserId }) => {
     setBusyUserId(user.id);
     setError('');
     try {
-      await api.delete(`/admin/users/${user.id}`);
+      await api.delete('/admin/users', { params: { id: user.id } });
       setUsers((currentUsers) => currentUsers.filter((currentUser) => currentUser.id !== user.id));
     } catch (requestError) {
       setError(requestError.response?.data?.message || 'Could not delete this user. Please try again.');
