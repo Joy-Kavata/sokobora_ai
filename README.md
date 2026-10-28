@@ -8,6 +8,8 @@ The application separates signed-in dashboards by role: farmers can publish and 
 
 Set `SESSION_SECRET` to a random value of at least 32 characters for both the API and application. For local development, set `CLIENT_ORIGIN` if the Vite client is served from an origin other than `http://localhost:5173`.
 
+Authentication cookies are browser-session cookies, and the dashboard is restored only in a tab with an active session marker. Opening the app in a new tab requires signing in again and clears the previous browser cookie; this prototype therefore supports one active signed-in tab per browser.
+
 The Vercel deployment uses one Node serverless function at `api/node/index.js` for the application API and a separate Python function at `api/index.py` for the AI service. Keep API handler modules outside the `api/` directory (they live under `lib/api/`) so Vercel does not deploy each handler as an additional serverless function.
 
 Configure `DATABASE_URL` with the application's PostgreSQL connection URL. On Vercel with Supabase, use the transaction-pooler URL for runtime queries. Configure `DIRECT_URL` with a Supabase direct or session-pooler URL for Prisma migrations; do not use the transaction pooler for migrations. Copy both URLs from the Supabase project's **Connect** dialog and verify the pooler username, project reference, region, port, and password. Set both variables in the Vercel environment used by the deployment. The login API also requires `SESSION_SECRET` to be set in that same Vercel environment.

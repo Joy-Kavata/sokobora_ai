@@ -7,6 +7,8 @@ import FarmerListingForm from './components/FarmerListingForm';
 import ImpactDashboard from './components/ImpactDashboard';
 import AdminUserManagement from './components/AdminUserManagement';
 
+const TAB_SESSION_KEY = 'sokobora_authenticated_tab';
+
 function App() {
   const [user, setUser] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
@@ -14,20 +16,52 @@ function App() {
   const [listingRefreshKey, setListingRefreshKey] = useState(0);
 
   useEffect(() => {
-    api.get('/auth/me')
-      .then((response) => setUser(response.data.data))
+    let active = true;
+    const handleSessionExpired = () => {
+      window.sessionStorage.removeItem(TAB_SESSION_KEY);
+      setUser(null);
+    };
+    window.addEventListener('sokobora:session-expired', handleSessionExpired);
+    const hasTabSession = window.sessionStorage.getItem(TAB_SESSION_KEY) === 'true';
+    const verifySession = hasTabSession ? api.get('/auth/me') : api.post('/auth/logout');
+
+    verifySession
+      .then((response) => {
+        if (!active) return;
+        if (hasTabSession) {
+          setUser(response.data.data);
+        } else {
+          window.sessionStorage.removeItem(TAB_SESSION_KEY);
+        }
+      })
       .catch((error) => {
+        if (!active) return;
+        window.sessionStorage.removeItem(TAB_SESSION_KEY);
         if (error.response?.status !== 401) {
           setSessionError(error.response?.data?.message || 'Could not connect to SokoBora AI. Please try again.');
         }
       })
-      .finally(() => setCheckingSession(false));
+      .finally(() => {
+        if (active) setCheckingSession(false);
+      });
+
+    return () => {
+      active = false;
+      window.removeEventListener('sokobora:session-expired', handleSessionExpired);
+    };
   }, []);
+
+  const handleAuthenticated = (authenticatedUser) => {
+    window.sessionStorage.setItem(TAB_SESSION_KEY, 'true');
+    setSessionError('');
+    setUser(authenticatedUser);
+  };
 
   const handleLogout = async () => {
     setSessionError('');
     try {
       await api.post('/auth/logout');
+      window.sessionStorage.removeItem(TAB_SESSION_KEY);
       setUser(null);
     } catch (error) {
       setSessionError(error.response?.data?.message || 'Could not sign out. Please try again.');
@@ -49,7 +83,7 @@ function App() {
         </main>
       );
     }
-    return <AuthPage onAuthenticated={setUser} />;
+    return <AuthPage onAuthenticated={handleAuthenticated} />;
   }
 
   return (
