@@ -20,6 +20,9 @@ const AuthPage = ({ onAuthenticated }) => {
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const isRegistering = mode === 'register';
   const hasLocation = formData.latitude !== '' && formData.longitude !== '';
@@ -70,6 +73,11 @@ const AuthPage = ({ onAuthenticated }) => {
     event.preventDefault();
     setError('');
 
+    if (isRegistering && formData.password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
     const latitude = Number(formData.latitude);
     const longitude = Number(formData.longitude);
     if (
@@ -103,6 +111,9 @@ const AuthPage = ({ onAuthenticated }) => {
     setMode(isRegistering ? 'login' : 'register');
     setError('');
     setLocationStatus('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
   };
 
   return (
@@ -233,19 +244,58 @@ const AuthPage = ({ onAuthenticated }) => {
             </label>
             <label className="block text-sm font-medium text-slate-700">
               Password
-              <input
-                name="password"
-                type="password"
-                autoComplete={isRegistering ? 'new-password' : 'current-password'}
-                minLength={isRegistering ? 8 : undefined}
-                maxLength={128}
-                value={formData.password}
-                onChange={handleChange}
-                required
-                className="mt-1.5 w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100"
-              />
+              <span className="relative mt-1.5 block">
+                <input
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete={isRegistering ? 'new-password' : 'current-password'}
+                  minLength={isRegistering ? 8 : undefined}
+                  maxLength={128}
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 pr-16 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  className="absolute inset-y-0 right-3 my-auto text-sm font-semibold text-green-700 hover:text-green-900"
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </span>
               {isRegistering && <span className="mt-1 block text-xs font-normal text-slate-500">Use at least 8 characters.</span>}
             </label>
+
+            {isRegistering && (
+              <label className="block text-sm font-medium text-slate-700">
+                Confirm password
+                <span className="relative mt-1.5 block">
+                  <input
+                    name="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    minLength={8}
+                    maxLength={128}
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    required
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2.5 pr-16 outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((visible) => !visible)}
+                    aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                    aria-pressed={showConfirmPassword}
+                    className="absolute inset-y-0 right-3 my-auto text-sm font-semibold text-green-700 hover:text-green-900"
+                  >
+                    {showConfirmPassword ? 'Hide' : 'Show'}
+                  </button>
+                </span>
+              </label>
+            )}
 
             <button
               type="submit"
