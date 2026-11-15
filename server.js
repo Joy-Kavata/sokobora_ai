@@ -18,6 +18,9 @@ app.all('/api/auth/login', require('./lib/api/auth/login'));
 app.all('/api/auth/me', require('./lib/api/auth/me'));
 app.all('/api/auth/logout', require('./lib/api/auth/logout'));
 app.all('/api/admin/users', require('./lib/api/admin/users'));
+app.all('/api/escrow/deposit', require('./lib/api/escrow/deposit'));
+app.all('/api/escrow/confirm-delivery', require('./lib/api/escrow/confirm-delivery'));
+app.all('/api/escrow/release', require('./lib/api/escrow/release'));
 
 app.use('/api', async (req, res, next) => {
   try {
@@ -36,9 +39,11 @@ app.use('/api', async (req, res, next) => {
 app.get('/api/listings', async (req, res) => {
   try {
     const listings = await prisma.produceListing.findMany({
+      where: req.user.role === 'FARMER' ? { farmerId: req.user.id } : undefined,
       include: {
         transaction: true,
         bids: {
+          ...(req.user.role === 'FARMER' ? {} : { where: { buyerId: req.user.id } }),
           orderBy: { bidAmountPerKg: 'desc' },
         }
       },
@@ -207,28 +212,3 @@ app.post('/api/bids/accept', async (req, res) => {
     return res.status(500).json({ success: false, message: 'Could not accept bid. Check the database connection and migration.' });
   }
 });
-
-app.post('/api/escrow/deposit', async (req, res) => updateEscrowState(req, res, 'PENDING_DEPOSIT', 'FUNDS_HELD', 'depositRecordedAt'));
-app.post('/api/escrow/release', async (req, res) => updateEscrowState(req, res, 'FUNDS_HELD', 'RELEASED', 'fundsReleasedAt'));
-
-async function updateEscrowState(req, res, expectedStatus, nextStatus, timestampField) {
-  try {
-    const { transactionId } = req.body;
-    const result = await prisma.transaction.updateMany({
-      where: { id: transactionId, escrowStatus: expectedStatus },
-      data: { escrowStatus: nextStatus, [timestampField]: new Date() }
-    });
-    if (result.count !== 1) {
-      return res.status(409).json({ success: false, message: 'Transaction is missing or is not in the required escrow state.' });
-    }
-    const transaction = await prisma.transaction.findUnique({ where: { id: transactionId } });
-    return res.status(200).json({
-      success: true,
-      message: `Escrow status updated to ${nextStatus}. This records workflow status only; it does not move funds.`,
-      data: transaction
-    });
-  } catch (error) {
-    console.error('Error updating escrow state:', error);
-    return res.status(500).json({ success: false, message: 'Could not update escrow status. Check the database migration.' });
-  }
-}

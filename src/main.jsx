@@ -8,6 +8,13 @@ import ImpactDashboard from './components/ImpactDashboard';
 import AdminUserManagement from './components/AdminUserManagement';
 
 const TAB_SESSION_KEY = 'sokobora_authenticated_tab';
+const SESSION_EXPIRY_KEY = 'sokobora_session_expires_at';
+const SESSION_DURATION_MS = 30 * 60 * 1000;
+const DASHBOARD_TITLES = {
+  BUYER: 'Buyer Dashboard',
+  FARMER: 'Farmer Dashboard',
+  ADMIN: 'Administrator Dashboard'
+};
 
 function App() {
   const [user, setUser] = useState(null);
@@ -19,10 +26,19 @@ function App() {
     let active = true;
     const handleSessionExpired = () => {
       window.sessionStorage.removeItem(TAB_SESSION_KEY);
+      window.sessionStorage.removeItem(SESSION_EXPIRY_KEY);
+      setSessionError('');
       setUser(null);
     };
     window.addEventListener('sokobora:session-expired', handleSessionExpired);
-    const hasTabSession = window.sessionStorage.getItem(TAB_SESSION_KEY) === 'true';
+    const storedExpiry = Number(window.sessionStorage.getItem(SESSION_EXPIRY_KEY));
+    const hasTabSession = window.sessionStorage.getItem(TAB_SESSION_KEY) === 'true' &&
+      Number.isSafeInteger(storedExpiry) &&
+      storedExpiry > Date.now();
+    if (!hasTabSession) {
+      window.sessionStorage.removeItem(TAB_SESSION_KEY);
+      window.sessionStorage.removeItem(SESSION_EXPIRY_KEY);
+    }
     const verifySession = hasTabSession ? api.get('/auth/me') : api.post('/auth/logout');
 
     verifySession
@@ -37,6 +53,7 @@ function App() {
       .catch((error) => {
         if (!active) return;
         window.sessionStorage.removeItem(TAB_SESSION_KEY);
+        window.sessionStorage.removeItem(SESSION_EXPIRY_KEY);
         if (error.response?.status !== 401) {
           setSessionError(error.response?.data?.message || 'Could not connect. Please try again.');
         }
@@ -51,8 +68,39 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!user) return undefined;
+
+    const expiresAt = Number(window.sessionStorage.getItem(SESSION_EXPIRY_KEY));
+    const expireSession = () => {
+      window.sessionStorage.removeItem(TAB_SESSION_KEY);
+      window.sessionStorage.removeItem(SESSION_EXPIRY_KEY);
+      setSessionError('');
+      setUser(null);
+    };
+
+    if (!Number.isSafeInteger(expiresAt) || expiresAt <= Date.now()) {
+      expireSession();
+      return undefined;
+    }
+
+    const timeout = window.setTimeout(expireSession, expiresAt - Date.now());
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && expiresAt <= Date.now()) {
+        expireSession();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.clearTimeout(timeout);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user]);
+
   const handleAuthenticated = (authenticatedUser) => {
     window.sessionStorage.setItem(TAB_SESSION_KEY, 'true');
+    window.sessionStorage.setItem(SESSION_EXPIRY_KEY, String(Date.now() + SESSION_DURATION_MS));
     setSessionError('');
     setUser(authenticatedUser);
   };
@@ -62,6 +110,7 @@ function App() {
     try {
       await api.post('/auth/logout');
       window.sessionStorage.removeItem(TAB_SESSION_KEY);
+      window.sessionStorage.removeItem(SESSION_EXPIRY_KEY);
       setUser(null);
     } catch (error) {
       setSessionError(error.response?.data?.message || 'Could not sign out. Please try again.');
@@ -90,8 +139,8 @@ function App() {
     <main className="mx-auto max-w-6xl px-4 py-6 md:px-6">
       <header className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
-          <h1 className="text-3xl font-bold text-green-800">SokoBora AI</h1>
-          <p className="mt-1 text-sm text-slate-600">Commercial produce trading for regional buyers and distributors.</p>
+          <h1 className="text-3xl font-bold text-green-800">{DASHBOARD_TITLES[user.role] || 'Dashboard'}</h1>
+          <p className="mt-1 text-sm text-slate-600">SokoBora AI · Commercial produce trading for regional buyers and distributors.</p>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-slate-600">{user.fullName}</span>

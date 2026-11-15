@@ -8,7 +8,9 @@ The application separates signed-in dashboards by role: farmers can publish and 
 
 Set `SESSION_SECRET` to a random value of at least 32 characters for both the API and application. For local development, set `CLIENT_ORIGIN` if the Vite client is served from an origin other than `http://localhost:5173`.
 
-Authentication cookies are browser-session cookies, and the dashboard is restored only in a tab with an active session marker. Opening the app in a new tab requires signing in again and clears the previous browser cookie; this prototype therefore supports one active signed-in tab per browser.
+Authentication cookies expire after 30 minutes, and the dashboard is restored only in a tab with an active session marker and an unexpired session. Closing the browser or tab ends the browser session; opening the app in a new tab requires signing in again. The server validates the signed session on every protected API request, so expired or missing sessions cannot access protected dashboards or data.
+
+Escrow status tracking follows deposit recorded, buyer delivery confirmation, then farmer release recording. The buyer's confirmation is required before the release step. The prototype does not connect to a payment provider, so recording a release does not transfer funds to a farmer account. After pulling schema changes for local development, run `npx prisma db push` to apply them; the Vercel build applies the Prisma schema automatically.
 
 The Vercel deployment uses one Node serverless function at `api/node/index.js` for the application API and a separate Python function at `api/index.py` for the AI service. Keep API handler modules outside the `api/` directory (they live under `lib/api/`) so Vercel does not deploy each handler as an additional serverless function.
 

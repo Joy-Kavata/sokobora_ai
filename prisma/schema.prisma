@@ -39,6 +39,7 @@ enum BidStatus {
 enum EscrowStatus {
   PENDING_DEPOSIT
   FUNDS_HELD
+  DELIVERY_CONFIRMED
   RELEASED
 }
 
@@ -130,6 +131,7 @@ model Transaction {
   pickupCode      String         @unique
   escrowStatus    EscrowStatus   @default(PENDING_DEPOSIT)
   depositRecordedAt DateTime?
+  deliveryConfirmedAt DateTime?
   fundsReleasedAt DateTime?
   
   createdAt       DateTime       @default(now())

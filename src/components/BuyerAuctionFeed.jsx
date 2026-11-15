@@ -160,9 +160,10 @@ const BuyerAuctionFeed = ({ user }) => {
                       </span>
                     </div>
                   </div>
-                  {isFarmer && listing.transaction && (
+                  {listing.transaction && (isFarmer || listing.bids?.some((bid) => bid.status === 'ACCEPTED')) && (
                     <EscrowTracker
                       transaction={listing.transaction}
+                      userRole={user.role}
                       busy={workflowBusy}
                       onAdvance={advanceEscrow}
                     />
@@ -273,18 +274,21 @@ const BuyerAuctionFeed = ({ user }) => {
 
 export default BuyerAuctionFeed;
 
-function EscrowTracker({ transaction, busy, onAdvance }) {
+function EscrowTracker({ transaction, userRole, busy, onAdvance }) {
   const steps = [
     { key: 'PENDING_DEPOSIT', label: 'Deposit pending' },
     { key: 'FUNDS_HELD', label: 'Funds recorded as held' },
+    { key: 'DELIVERY_CONFIRMED', label: 'Delivery confirmed by buyer' },
     { key: 'RELEASED', label: 'Release recorded' }
   ];
   const currentIndex = steps.findIndex((step) => step.key === transaction.escrowStatus);
-  const nextAction = transaction.escrowStatus === 'PENDING_DEPOSIT'
+  const nextAction = userRole === 'FARMER' && transaction.escrowStatus === 'PENDING_DEPOSIT'
     ? { path: 'deposit', label: 'Record deposit received' }
-    : transaction.escrowStatus === 'FUNDS_HELD'
-      ? { path: 'release', label: 'Record release' }
-      : null;
+    : userRole === 'BUYER' && transaction.escrowStatus === 'FUNDS_HELD'
+      ? { path: 'confirm-delivery', label: 'Confirm delivery received' }
+      : userRole === 'FARMER' && transaction.escrowStatus === 'DELIVERY_CONFIRMED'
+        ? { path: 'release', label: 'Record release to farmer' }
+        : null;
 
   return (
     <section className="mb-4 p-3 border border-green-200 bg-green-50 rounded" aria-label="Escrow status tracker">
@@ -315,7 +319,9 @@ function EscrowTracker({ transaction, busy, onAdvance }) {
           {busy ? 'Updating status...' : nextAction.label}
         </button>
       )}
-      <p className="mt-2 text-[10px] leading-4 text-gray-600">This prototype records escrow workflow states only. No payment or fund transfer is connected.</p>
+      <p className="mt-2 text-[10px] leading-4 text-gray-600">
+        Delivery confirmation is required before release can be recorded. This prototype tracks status only; it does not transfer funds to a farmer account.
+      </p>
     </section>
   );
 }

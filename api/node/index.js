@@ -22,6 +22,7 @@ const handlers = {
   '/bids': require('../../lib/api/bids'),
   '/bids/accept': require('../../lib/api/bids/accept'),
   '/escrow/deposit': require('../../lib/api/escrow/deposit'),
+  '/escrow/confirm-delivery': require('../../lib/api/escrow/confirm-delivery'),
   '/escrow/release': require('../../lib/api/escrow/release')
 };
 
