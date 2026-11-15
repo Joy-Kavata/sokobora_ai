@@ -18,6 +18,7 @@ app.all('/api/auth/login', require('./lib/api/auth/login'));
 app.all('/api/auth/me', require('./lib/api/auth/me'));
 app.all('/api/auth/logout', require('./lib/api/auth/logout'));
 app.all('/api/admin/users', require('./lib/api/admin/users'));
+app.all('/api/listings/:id', require('./lib/api/listings'));
 app.all('/api/escrow/deposit', require('./lib/api/escrow/deposit'));
 app.all('/api/escrow/confirm-delivery', require('./lib/api/escrow/confirm-delivery'));
 app.all('/api/escrow/release', require('./lib/api/escrow/release'));

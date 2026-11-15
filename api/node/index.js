@@ -36,7 +36,16 @@ app.use((req, res) => {
     return res.status(200).json({ status: 'active', message: 'SokoBora AI API is operational' });
   }
 
-  const handler = handlers[route];
+  const listingMatch = route.match(/^\/listings\/([^/]+)$/);
+  if (listingMatch) {
+    try {
+      req.params = { id: decodeURIComponent(listingMatch[1]) };
+    } catch {
+      return res.status(400).json({ success: false, message: 'Invalid listing identifier.' });
+    }
+  }
+
+  const handler = handlers[route] || (listingMatch ? handlers['/listings'] : undefined);
   if (!handler) {
     return res.status(404).json({ success: false, message: 'API route not found.' });
   }

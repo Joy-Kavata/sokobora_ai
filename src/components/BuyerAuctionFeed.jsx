@@ -13,6 +13,9 @@ const BuyerAuctionFeed = ({ user }) => {
   const [workflowMessage, setWorkflowMessage] = useState('');
   const [workflowError, setWorkflowError] = useState('');
   const [workflowBusy, setWorkflowBusy] = useState(false);
+  const [editingListing, setEditingListing] = useState(null);
+  const [listingActionError, setListingActionError] = useState('');
+  const [listingActionBusy, setListingActionBusy] = useState(false);
   
   useEffect(() => {
     fetchListings();
@@ -87,6 +90,48 @@ const BuyerAuctionFeed = ({ user }) => {
     }
   };
 
+  const startEditingListing = (listing) => {
+    setListingActionError('');
+    setEditingListing({
+      id: listing.id,
+      cropType: listing.cropType,
+      quantityKg: String(listing.quantityKg),
+      county: listing.county,
+      subCounty: listing.subCounty || '',
+      startingPricePerKg: String(listing.startingPricePerKg)
+    });
+  };
+
+  const handleUpdateListing = async (event) => {
+    event.preventDefault();
+    setListingActionBusy(true);
+    setListingActionError('');
+    try {
+      await api.patch(`/listings/${encodeURIComponent(editingListing.id)}`, editingListing);
+      setEditingListing(null);
+      await fetchListings();
+    } catch (error) {
+      setListingActionError(error.response?.data?.message || 'Could not update this listing.');
+    } finally {
+      setListingActionBusy(false);
+    }
+  };
+
+  const handleDeleteListing = async (listing) => {
+    if (!window.confirm(`Delete your ${listing.cropType} listing? This cannot be undone.`)) return;
+
+    setListingActionBusy(true);
+    setListingActionError('');
+    try {
+      await api.delete(`/listings/${encodeURIComponent(listing.id)}`);
+      await fetchListings();
+    } catch (error) {
+      setListingActionError(error.response?.data?.message || 'Could not delete this listing.');
+    } finally {
+      setListingActionBusy(false);
+    }
+  };
+
   if (loading) {
     return <div className="p-6 text-center text-gray-500">Loading SokoBora AI marketplace feed...</div>;
   }
@@ -124,6 +169,11 @@ const BuyerAuctionFeed = ({ user }) => {
       {workflowMessage && (
         <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-800 text-sm rounded-md">{workflowMessage}</div>
       )}
+      {listingActionError && (
+        <div role="alert" className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {listingActionError}
+        </div>
+      )}
 
       {listings.length === 0 ? (
         <div className="p-8 text-center bg-gray-50 rounded-lg text-gray-500 border">
@@ -132,6 +182,10 @@ const BuyerAuctionFeed = ({ user }) => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {listings.map((listing) => {
+            const canManageListing =
+              listing.status === 'ACTIVE' &&
+              !listing.transaction &&
+              (listing.bids?.length || 0) === 0;
             return (
               <div 
                 key={listing.id} 
@@ -186,6 +240,35 @@ const BuyerAuctionFeed = ({ user }) => {
                       ))}
                     </div>
                   )}
+                  {isFarmer && (
+                    <>
+                      <div className="mb-4 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => startEditingListing(listing)}
+                          disabled={!canManageListing || listingActionBusy}
+                          title={canManageListing ? 'Edit listing' : 'Listings with bids or transactions cannot be edited.'}
+                          className="flex-1 rounded border border-green-700 px-3 py-2 text-xs font-semibold text-green-800 hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteListing(listing)}
+                          disabled={!canManageListing || listingActionBusy}
+                          title={canManageListing ? 'Delete listing' : 'Listings with bids or transactions cannot be deleted.'}
+                          className="flex-1 rounded border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                      {!canManageListing && (
+                        <p className="mb-4 text-xs text-gray-500">
+                          Editing and deletion are unavailable once a buyer bids or a transaction starts.
+                        </p>
+                      )}
+                    </>
+                  )}
                 </div>
 
                 {!isFarmer && (
@@ -204,6 +287,88 @@ const BuyerAuctionFeed = ({ user }) => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {editingListing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+          <div className="w-full max-w-md rounded-xl border bg-white p-6 shadow-xl">
+            <h3 className="mb-4 text-lg font-bold text-gray-800">Edit produce listing</h3>
+            <form onSubmit={handleUpdateListing} className="space-y-3">
+              <label className="block text-xs font-semibold text-gray-700">
+                Product
+                <input
+                  type="text"
+                  value={editingListing.cropType}
+                  onChange={(event) => setEditingListing({ ...editingListing, cropType: event.target.value })}
+                  required
+                  className="mt-1 w-full rounded border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-green-500"
+                />
+              </label>
+              <label className="block text-xs font-semibold text-gray-700">
+                Available volume (kg)
+                <input
+                  type="number"
+                  min="0.01"
+                  step="any"
+                  value={editingListing.quantityKg}
+                  onChange={(event) => setEditingListing({ ...editingListing, quantityKg: event.target.value })}
+                  required
+                  className="mt-1 w-full rounded border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-green-500"
+                />
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block text-xs font-semibold text-gray-700">
+                  County / Region
+                  <input
+                    type="text"
+                    value={editingListing.county}
+                    onChange={(event) => setEditingListing({ ...editingListing, county: event.target.value })}
+                    required
+                    className="mt-1 w-full rounded border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-green-500"
+                  />
+                </label>
+                <label className="block text-xs font-semibold text-gray-700">
+                  Trading area
+                  <input
+                    type="text"
+                    value={editingListing.subCounty}
+                    onChange={(event) => setEditingListing({ ...editingListing, subCounty: event.target.value })}
+                    className="mt-1 w-full rounded border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-green-500"
+                  />
+                </label>
+              </div>
+              <label className="block text-xs font-semibold text-gray-700">
+                Asking price (KES/kg)
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={editingListing.startingPricePerKg}
+                  onChange={(event) => setEditingListing({ ...editingListing, startingPricePerKg: event.target.value })}
+                  required
+                  className="mt-1 w-full rounded border border-gray-300 p-2 text-sm focus:ring-2 focus:ring-green-500"
+                />
+              </label>
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingListing(null)}
+                  disabled={listingActionBusy}
+                  className="w-1/2 rounded border py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={listingActionBusy}
+                  className="w-1/2 rounded bg-green-700 py-2 text-sm font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+                >
+                  {listingActionBusy ? 'Saving...' : 'Save changes'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

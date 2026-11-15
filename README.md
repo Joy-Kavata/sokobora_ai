@@ -6,6 +6,8 @@ Visitors can create a farmer or buyer account from the sign-in page. Successful 
 
 The application separates signed-in dashboards by role: farmers can publish and manage their own listings and review incoming bids; buyers can browse the marketplace and place bids; administrators can view platform metrics and manage user roles. Listing creation, bidding, bid acceptance, and escrow status updates are also checked by the API against the signed-in user's role and listing ownership.
 
+Farmers can edit or delete their own active listings until a buyer has placed a bid or a transaction has started. Listing changes are checked by the API for ownership and eligibility.
+
 Set `SESSION_SECRET` to a random value of at least 32 characters for both the API and application. For local development, set `CLIENT_ORIGIN` if the Vite client is served from an origin other than `http://localhost:5173`.
 
 Authentication cookies expire after 30 minutes, and the dashboard is restored only in a tab with an active session marker and an unexpired session. Closing the browser or tab ends the browser session; opening the app in a new tab requires signing in again. The server validates the signed session on every protected API request, so expired or missing sessions cannot access protected dashboards or data.
