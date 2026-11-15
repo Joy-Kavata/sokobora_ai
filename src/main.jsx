@@ -38,7 +38,7 @@ function App() {
         if (!active) return;
         window.sessionStorage.removeItem(TAB_SESSION_KEY);
         if (error.response?.status !== 401) {
-          setSessionError(error.response?.data?.message || 'Could not connect to SokoBora AI. Please try again.');
+          setSessionError(error.response?.data?.message || 'Could not connect. Please try again.');
         }
       })
       .finally(() => {

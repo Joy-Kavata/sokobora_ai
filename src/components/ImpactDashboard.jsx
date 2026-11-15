@@ -68,7 +68,7 @@ const ImpactDashboard = () => {
         {/* Metric 3: Active inventory */}
         <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
           <p className="text-xs text-gray-500 font-semibold uppercase">Active Listings</p>
-          <p className="text-2xl font-extrabold text-blue-600 mt-2">
+          <p className="text-2xl font-extrabold text-orange-600 mt-2">
             {metrics.activeListings.toLocaleString()}
           </p>
           <p className="text-xs text-gray-400 mt-1">Available to regional buyers</p>
@@ -77,7 +77,7 @@ const ImpactDashboard = () => {
         {/* Metric 4: Regional coverage */}
         <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
           <p className="text-xs text-gray-500 font-semibold uppercase">Trading Regions</p>
-          <p className="text-2xl font-extrabold text-red-600 mt-2">
+          <p className="text-2xl font-extrabold text-green-800 mt-2">
             {metrics.regionsRepresented.toLocaleString()}
           </p>
           <p className="text-xs text-gray-400 mt-1">Represented in active listings</p>

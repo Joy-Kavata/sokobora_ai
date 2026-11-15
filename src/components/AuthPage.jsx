@@ -117,30 +117,24 @@ const AuthPage = ({ onAuthenticated }) => {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-xl md:grid-cols-2">
-        <section className="flex flex-col justify-between bg-green-800 p-8 text-white md:p-12">
-          <div>
+    <main className="flex min-h-screen items-center justify-center bg-slate-100 p-4 py-10">
+      <section className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
+        <header className="mb-8 text-center">
             <img
               src="/sokobora-logo.png"
               alt="SokoBora"
-              className="h-28 w-28 rounded-full bg-white object-contain p-1"
+              className="mx-auto h-24 w-24 rounded-full bg-white object-contain"
             />
-            <h1 className="mt-8 text-4xl font-bold leading-tight md:text-5xl">A better market for every harvest.</h1>
-            <p className="mt-5 max-w-md text-green-100">
-              Sign in or create an account to connect with Kenya&apos;s regional produce exchange.
-            </p>
-          </div>
-          <p className="mt-12 text-sm text-green-200">Fair trade. Fresh produce. Stronger communities.</p>
-        </section>
+            <h1 className="mt-4 text-2xl font-bold leading-tight text-green-800 sm:text-3xl">A better market for every harvest.</h1>
+            <p className="mt-2 text-sm text-slate-600">Kenya&apos;s regional produce exchange</p>
+        </header>
 
-        <section className="p-8 md:p-12">
-          <div className="mb-8">
-            <p className="text-sm font-semibold text-green-700">{isRegistering ? 'JOIN THE EXCHANGE' : 'WELCOME BACK'}</p>
-            <h2 className="mt-2 text-3xl font-bold text-slate-900">
+        <div>
+            <p className="text-center text-sm font-semibold tracking-wide text-green-700">{isRegistering ? 'JOIN THE EXCHANGE' : 'WELCOME BACK'}</p>
+            <h2 className="mt-2 text-center text-2xl font-bold text-slate-900">
               {isRegistering ? 'Create your account' : 'Sign in'}
             </h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 mb-7 text-center text-sm text-slate-600">
               {isRegistering
                 ? 'Your account takes you straight to the commodity exchange.'
                 : 'Sign in to continue to the commodity exchange.'}
@@ -320,8 +314,7 @@ const AuthPage = ({ onAuthenticated }) => {
               {isRegistering ? 'Sign in' : 'Create an account'}
             </button>
           </p>
-        </section>
-      </div>
+      </section>
     </main>
   );
 };
