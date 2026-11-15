@@ -23,6 +23,7 @@ const AuthPage = ({ onAuthenticated }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const isRegistering = mode === 'register';
   const hasLocation = formData.latitude !== '' && formData.longitude !== '';
@@ -97,9 +98,9 @@ const AuthPage = ({ onAuthenticated }) => {
       const endpoint = isRegistering ? '/auth/register' : '/auth/login';
       const payload = isRegistering
         ? { ...formData, latitude, longitude }
-        : { email: formData.email, password: formData.password };
+        : { email: formData.email, password: formData.password, rememberMe };
       const response = await api.post(endpoint, payload);
-      onAuthenticated(response.data.data);
+      onAuthenticated(response.data.data, !isRegistering && rememberMe);
     } catch (requestError) {
       setError(requestError.response?.data?.message || 'Unable to access your account. Please try again.');
     } finally {
@@ -119,15 +120,47 @@ const AuthPage = ({ onAuthenticated }) => {
   return (
     <main className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
       <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-xl md:grid-cols-2">
-        <section className="flex flex-col justify-between bg-green-800 p-8 text-white md:p-12">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-[0.2em] text-green-200">SokoBora AI</p>
+        <section className="relative isolate flex flex-col justify-between overflow-hidden bg-gradient-to-br from-green-950 via-green-900 to-emerald-950 p-8 text-white md:p-12">
+          <svg
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 -z-10 h-full w-full text-emerald-100 opacity-[0.08]"
+            viewBox="0 0 600 800"
+            preserveAspectRatio="xMidYMid slice"
+          >
+            <defs>
+              <pattern id="field-grid" width="48" height="48" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+                <path d="M 48 0 L 0 0 0 48" fill="none" stroke="currentColor" strokeWidth="1" />
+              </pattern>
+            </defs>
+            <rect width="600" height="800" fill="url(#field-grid)" />
+            <circle cx="488" cy="106" r="118" fill="currentColor" opacity="0.12" />
+            <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3">
+              <path d="M0 666c117-61 195-28 293 1s184 35 307-18" />
+              <path d="M0 710c123-47 192-13 302 13s187 24 298-11" />
+              <path d="M430 658c-5-65 5-116 37-170" />
+              <path d="M466 548c-39 1-59-22-58-53 34-1 56 18 58 53Z" />
+              <path d="M469 516c-2-36 17-57 48-60 5 31-13 55-48 60Z" />
+              <path d="M455 577c-38-2-57-25-53-55 33 0 54 20 53 55Z" />
+              <path d="M446 624c34-20 65-10 78 17-29 17-57 11-78-17Z" />
+              <path d="M518 658v-72m-24 72v-54m48 54v-54" />
+              <path d="M487 586h65l-8 20h-49l-8-20Z" />
+            </g>
+          </svg>
+          <div className="relative">
+            <div className="flex items-center gap-3 text-sm font-bold uppercase tracking-[0.18em] text-green-100">
+              <svg aria-hidden="true" viewBox="0 0 40 40" className="h-10 w-10 shrink-0">
+                <rect x="1" y="1" width="38" height="38" rx="12" fill="white" fillOpacity="0.12" />
+                <path d="M20 30V17m0 7c-6 0-10-4-10-10 6 0 10 4 10 10Zm0-4c0-6 4-10 10-10 0 6-4 10-10 10Z" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                <path d="M12 30h16" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+              </svg>
+              <span>SokoBora AI</span>
+            </div>
             <h1 className="mt-12 text-4xl font-bold leading-tight md:text-5xl">A better market for every harvest.</h1>
             <p className="mt-5 max-w-md text-green-100">
               Sign in or create an account to connect with Kenya&apos;s regional produce exchange.
             </p>
           </div>
-          <p className="mt-12 text-sm text-green-200">Fair trade. Fresh produce. Stronger communities.</p>
+          <p className="relative mt-12 text-sm text-green-200">Fair trade. Fresh produce. Stronger communities.</p>
         </section>
 
         <section className="p-8 md:p-12">
@@ -268,6 +301,18 @@ const AuthPage = ({ onAuthenticated }) => {
               </span>
               {isRegistering && <span className="mt-1 block text-xs font-normal text-slate-500">Use at least 8 characters.</span>}
             </label>
+
+            {!isRegistering && (
+              <label className="flex w-fit cursor-pointer items-center gap-2 text-sm text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 accent-green-700 focus:ring-2 focus:ring-green-200"
+                />
+                Remember me on this device
+              </label>
+            )}
 
             {isRegistering && (
               <label className="block text-sm font-medium text-slate-700">

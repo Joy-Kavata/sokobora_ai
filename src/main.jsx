@@ -8,6 +8,7 @@ import ImpactDashboard from './components/ImpactDashboard';
 import AdminUserManagement from './components/AdminUserManagement';
 
 const TAB_SESSION_KEY = 'sokobora_authenticated_tab';
+const REMEMBERED_SESSION_KEY = 'sokobora_remembered_session';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -19,16 +20,18 @@ function App() {
     let active = true;
     const handleSessionExpired = () => {
       window.sessionStorage.removeItem(TAB_SESSION_KEY);
+      window.localStorage.removeItem(REMEMBERED_SESSION_KEY);
       setUser(null);
     };
     window.addEventListener('sokobora:session-expired', handleSessionExpired);
-    const hasTabSession = window.sessionStorage.getItem(TAB_SESSION_KEY) === 'true';
-    const verifySession = hasTabSession ? api.get('/auth/me') : api.post('/auth/logout');
+    const hasSession = window.sessionStorage.getItem(TAB_SESSION_KEY) === 'true' ||
+      window.localStorage.getItem(REMEMBERED_SESSION_KEY) === 'true';
+    const verifySession = hasSession ? api.get('/auth/me') : api.post('/auth/logout');
 
     verifySession
       .then((response) => {
         if (!active) return;
-        if (hasTabSession) {
+        if (hasSession) {
           setUser(response.data.data);
         } else {
           window.sessionStorage.removeItem(TAB_SESSION_KEY);
@@ -37,6 +40,7 @@ function App() {
       .catch((error) => {
         if (!active) return;
         window.sessionStorage.removeItem(TAB_SESSION_KEY);
+        window.localStorage.removeItem(REMEMBERED_SESSION_KEY);
         if (error.response?.status !== 401) {
           setSessionError(error.response?.data?.message || 'Could not connect to SokoBora AI. Please try again.');
         }
@@ -51,8 +55,14 @@ function App() {
     };
   }, []);
 
-  const handleAuthenticated = (authenticatedUser) => {
-    window.sessionStorage.setItem(TAB_SESSION_KEY, 'true');
+  const handleAuthenticated = (authenticatedUser, rememberMe = false) => {
+    if (rememberMe) {
+      window.localStorage.setItem(REMEMBERED_SESSION_KEY, 'true');
+      window.sessionStorage.removeItem(TAB_SESSION_KEY);
+    } else {
+      window.localStorage.removeItem(REMEMBERED_SESSION_KEY);
+      window.sessionStorage.setItem(TAB_SESSION_KEY, 'true');
+    }
     setSessionError('');
     setUser(authenticatedUser);
   };
@@ -62,6 +72,7 @@ function App() {
     try {
       await api.post('/auth/logout');
       window.sessionStorage.removeItem(TAB_SESSION_KEY);
+      window.localStorage.removeItem(REMEMBERED_SESSION_KEY);
       setUser(null);
     } catch (error) {
       setSessionError(error.response?.data?.message || 'Could not sign out. Please try again.');
