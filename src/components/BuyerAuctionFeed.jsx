@@ -214,6 +214,9 @@ const BuyerAuctionFeed = ({ user }) => {
                       </span>
                     </div>
                   </div>
+                  {!isFarmer && listing.bids?.map((bid) => (
+                    <BidStatusNotice key={bid.id} bid={bid} />
+                  ))}
                   {listing.transaction && (isFarmer || listing.bids?.some((bid) => bid.status === 'ACCEPTED')) && (
                     <EscrowTracker
                       transaction={listing.transaction}
@@ -456,11 +459,6 @@ function EscrowTracker({ transaction, userRole, busy, onAdvance }) {
       : userRole === 'FARMER' && transaction.escrowStatus === 'DELIVERY_CONFIRMED'
         ? { path: 'release', label: 'Record release to farmer' }
         : null;
-  const pendingMessage = userRole === 'FARMER' && transaction.escrowStatus === 'FUNDS_HELD'
-    ? 'Deposit recorded. We’re waiting for the buyer to confirm delivery; once confirmed, you can record the release.'
-    : userRole === 'BUYER' && transaction.escrowStatus === 'FUNDS_HELD'
-      ? 'Funds are recorded as held. Please confirm delivery after you receive the produce.'
-      : null;
 
   return (
     <section className="mb-4 p-3 border border-green-200 bg-green-50 rounded" aria-label="Escrow status tracker">
@@ -481,9 +479,19 @@ function EscrowTracker({ transaction, userRole, busy, onAdvance }) {
           );
         })}
       </ol>
-      {pendingMessage && (
-        <p role="status" className="mt-3 rounded bg-white/70 p-2 text-xs font-medium text-green-950">
-          {pendingMessage}
+      {userRole === 'FARMER' && transaction.escrowStatus === 'FUNDS_HELD' && (
+        <p role="status" className="mt-3 rounded bg-white/70 p-2 text-xs text-green-950">
+          Funds are recorded as held. We&apos;re waiting for the buyer to confirm delivery; once confirmed, you can record the release.
+        </p>
+      )}
+      {userRole === 'BUYER' && transaction.escrowStatus === 'FUNDS_HELD' && (
+        <p role="status" className="mt-3 rounded bg-white/70 p-2 text-xs text-green-950">
+          Funds are recorded as held. Please confirm delivery so the farmer can continue with the release.
+        </p>
+      )}
+      {userRole === 'FARMER' && transaction.escrowStatus === 'DELIVERY_CONFIRMED' && (
+        <p role="status" className="mt-3 rounded bg-white/70 p-2 text-xs text-green-950">
+          The buyer confirmed delivery. You can now record the release.
         </p>
       )}
       {nextAction && (
@@ -500,5 +508,39 @@ function EscrowTracker({ transaction, userRole, busy, onAdvance }) {
         Delivery confirmation is required before release can be recorded. This prototype tracks status only; it does not transfer funds to a farmer account.
       </p>
     </section>
+  );
+}
+
+function BidStatusNotice({ bid }) {
+  const status = {
+    PENDING: {
+      label: 'Awaiting farmer confirmation',
+      message: 'We’re waiting for the farmer to confirm your bid.',
+      className: 'border-amber-200 bg-amber-50 text-amber-900'
+    },
+    ACCEPTED: {
+      label: 'Bid accepted',
+      message: 'The farmer accepted your bid. Follow the escrow steps below.',
+      className: 'border-green-200 bg-green-50 text-green-900'
+    },
+    REJECTED: {
+      label: 'Bid not accepted',
+      message: 'The farmer accepted another bid for this listing.',
+      className: 'border-gray-200 bg-gray-50 text-gray-700'
+    },
+    OUTBID: {
+      label: 'Outbid',
+      message: 'A higher bid was placed on this listing.',
+      className: 'border-orange-200 bg-orange-50 text-orange-900'
+    }
+  }[bid.status];
+
+  if (!status) return null;
+
+  return (
+    <div role="status" className={`mb-3 rounded border p-3 text-xs ${status.className}`}>
+      <p className="font-semibold">{status.label} · KES {bid.bidAmountPerKg}/kg</p>
+      <p className="mt-1">{status.message}</p>
+    </div>
   );
 }
