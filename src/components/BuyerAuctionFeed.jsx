@@ -224,7 +224,9 @@ const BuyerAuctionFeed = ({ user }) => {
                   )}
                   {isFarmer && !listing.transaction && listing.bids?.some((bid) => bid.status === 'PENDING') && (
                     <div className="mb-4 border border-amber-200 bg-amber-50 p-3 rounded">
-                      <p className="text-xs font-semibold text-amber-900 mb-2">Buyer bids awaiting acceptance</p>
+                      <p role="status" className="mb-2 text-xs font-semibold text-amber-900">
+                        A buyer has placed a bid. We&apos;re waiting for you to confirm it before the order can continue.
+                      </p>
                       {listing.bids.filter((bid) => bid.status === 'PENDING').map((bid) => (
                         <div key={bid.id} className="flex items-center justify-between gap-2 py-1">
                           <span className="text-xs text-gray-700">KES {bid.bidAmountPerKg}/kg</span>
@@ -454,6 +456,11 @@ function EscrowTracker({ transaction, userRole, busy, onAdvance }) {
       : userRole === 'FARMER' && transaction.escrowStatus === 'DELIVERY_CONFIRMED'
         ? { path: 'release', label: 'Record release to farmer' }
         : null;
+  const pendingMessage = userRole === 'FARMER' && transaction.escrowStatus === 'FUNDS_HELD'
+    ? 'Deposit recorded. We’re waiting for the buyer to confirm delivery; once confirmed, you can record the release.'
+    : userRole === 'BUYER' && transaction.escrowStatus === 'FUNDS_HELD'
+      ? 'Funds are recorded as held. Please confirm delivery after you receive the produce.'
+      : null;
 
   return (
     <section className="mb-4 p-3 border border-green-200 bg-green-50 rounded" aria-label="Escrow status tracker">
@@ -474,6 +481,11 @@ function EscrowTracker({ transaction, userRole, busy, onAdvance }) {
           );
         })}
       </ol>
+      {pendingMessage && (
+        <p role="status" className="mt-3 rounded bg-white/70 p-2 text-xs font-medium text-green-950">
+          {pendingMessage}
+        </p>
+      )}
       {nextAction && (
         <button
           type="button"
