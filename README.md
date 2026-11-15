@@ -8,7 +8,7 @@ The application separates signed-in dashboards by role: farmers can publish and 
 
 Set `SESSION_SECRET` to a random value of at least 32 characters for both the API and application. For local development, set `CLIENT_ORIGIN` if the Vite client is served from an origin other than `http://localhost:5173`.
 
-Authentication cookies are browser-session cookies by default, and the dashboard is restored only in a tab with an active session marker. Selecting **Remember me on this device** opts in to a persistent cookie and restores the session for up to seven days, including in another tab. Signing out clears the session from the device.
+Authentication cookies are browser-session cookies, and the dashboard is restored only in a tab with an active session marker. Opening the app in a new tab requires signing in again and clears the previous browser cookie; this prototype therefore supports one active signed-in tab per browser.
 
 The Vercel deployment uses one Node serverless function at `api/node/index.js` for the application API and a separate Python function at `api/index.py` for the AI service. Keep API handler modules outside the `api/` directory (they live under `lib/api/`) so Vercel does not deploy each handler as an additional serverless function.
 
