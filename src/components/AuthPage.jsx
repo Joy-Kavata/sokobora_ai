@@ -126,19 +126,19 @@ const AuthPage = ({ onAuthenticated }) => {
               className="mx-auto h-24 w-24 rounded-full bg-white object-contain"
             />
             <h1 className="mt-4 text-2xl font-bold leading-tight text-green-800 sm:text-3xl">A better market for every harvest.</h1>
-            <p className="mt-2 text-sm text-slate-600">Kenya&apos;s regional produce exchange</p>
+            {/* <p className="mt-2 text-sm text-slate-600">Kenya&apos;s regional produce exchange</p> */}
         </header>
 
         <div>
-            <p className="text-center text-sm font-semibold tracking-wide text-green-700">{isRegistering ? 'JOIN THE EXCHANGE' : 'WELCOME BACK'}</p>
+            {/* <p className="text-center text-sm font-semibold tracking-wide text-green-700">{isRegistering ? 'JOIN THE EXCHANGE' : 'WELCOME BACK'}</p> */}
             <h2 className="mt-2 text-center text-2xl font-bold text-slate-900">
               {isRegistering ? 'Create your account' : 'Sign in'}
             </h2>
-            <p className="mt-2 mb-7 text-center text-sm text-slate-600">
+            {/* <p className="mt-2 mb-7 text-center text-sm text-slate-600">
               {isRegistering
                 ? 'Your account takes you straight to the commodity exchange.'
                 : 'Sign in to continue to the commodity exchange.'}
-            </p>
+            </p> */}
           </div>
 
           {error && (
